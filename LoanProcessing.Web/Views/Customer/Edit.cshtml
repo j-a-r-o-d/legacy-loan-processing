@@ -1,0 +1,328 @@
+@model LoanProcessing.Web.Models.Customer
+
+@{
+    ViewBag.Title = "Edit Customer";
+}
+
+<h2>Edit Customer</h2>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Customer Information - @Model.FirstName @Model.LastName</h3>
+            </div>
+            <div class="panel-body">
+                @using (Html.BeginForm("Edit", "Customer", FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+                {
+                    @Html.AntiForgeryToken()
+
+                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                    @Html.HiddenFor(model => model.CustomerId)
+                    @Html.HiddenFor(model => model.CreatedDate)
+                    @Html.HiddenFor(model => model.ModifiedDate)
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.FirstName, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.TextBoxFor(model => model.FirstName, new { @class = "form-control", placeholder = "Enter first name" })
+                            @Html.ValidationMessageFor(model => model.FirstName, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.LastName, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.TextBoxFor(model => model.LastName, new { @class = "form-control", placeholder = "Enter last name" })
+                            @Html.ValidationMessageFor(model => model.LastName, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.SSN, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.TextBoxFor(model => model.SSN, new { @class = "form-control", placeholder = "###-##-####", maxlength = "11", @readonly = "readonly" })
+                            @Html.ValidationMessageFor(model => model.SSN, "", new { @class = "text-danger" })
+                            <span class="help-block">SSN cannot be changed after creation</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.DateOfBirth, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.TextBoxFor(model => model.DateOfBirth, "{0:yyyy-MM-dd}", new { @class = "form-control", type = "date" })
+                            @Html.ValidationMessageFor(model => model.DateOfBirth, "", new { @class = "text-danger" })
+                            <span class="help-block">Must be at least 18 years old</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.AnnualIncome, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            <div class="input-group">
+                                <span class="input-group-addon">$</span>
+                                @Html.TextBoxFor(model => model.AnnualIncome, new { @class = "form-control", type = "number", step = "0.01", min = "0", placeholder = "0.00" })
+                            </div>
+                            @Html.ValidationMessageFor(model => model.AnnualIncome, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.CreditScore, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.TextBoxFor(model => model.CreditScore, new { @class = "form-control", type = "number", min = "300", max = "850", placeholder = "300-850" })
+                            @Html.ValidationMessageFor(model => model.CreditScore, "", new { @class = "text-danger" })
+                            <span class="help-block">Valid range: 300-850</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Email, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.TextBoxFor(model => model.Email, new { @class = "form-control", type = "email", placeholder = "email@example.com" })
+                            @Html.ValidationMessageFor(model => model.Email, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Phone, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.TextBoxFor(model => model.Phone, new { @class = "form-control", type = "tel", placeholder = "(555) 555-5555" })
+                            @Html.ValidationMessageFor(model => model.Phone, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Address, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.TextAreaFor(model => model.Address, new { @class = "form-control", rows = "3", placeholder = "Enter full address" })
+                            @Html.ValidationMessageFor(model => model.Address, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-md-offset-3 col-md-9">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="glyphicon glyphicon-floppy-disk"></span> Save Changes
+                            </button>
+                            @Html.ActionLink("Cancel", "Details", new { id = Model.CustomerId }, new { @class = "btn btn-default" })
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-info-sign"></span> Information
+                </h3>
+            </div>
+            <div class="panel-body">
+                <h4>Customer ID</h4>
+                <p><strong>@Model.CustomerId</strong></p>
+
+                <h4>Record Information</h4>
+                <dl>
+                    <dt>Created:</dt>
+                    <dd>@Model.CreatedDate.ToString("MM/dd/yyyy hh:mm tt")</dd>
+
+                    @if (Model.ModifiedDate.HasValue)
+                    {
+                        <dt>Last Modified:</dt>
+                        <dd>@Model.ModifiedDate.Value.ToString("MM/dd/yyyy hh:mm tt")</dd>
+                    }
+                </dl>
+
+                <h4>Validation Rules</h4>
+                <ul>
+                    <li><strong>SSN:</strong> Cannot be changed</li>
+                    <li><strong>Age:</strong> Customer must be at least 18 years old</li>
+                    <li><strong>Credit Score:</strong> Must be between 300 and 850</li>
+                    <li><strong>Annual Income:</strong> Must be a positive number</li>
+                    <li><strong>Email:</strong> Must be a valid email address</li>
+                </ul>
+
+                <h4>Credit Score Ranges</h4>
+                <ul>
+                    <li><strong>750-850:</strong> Excellent</li>
+                    <li><strong>700-749:</strong> Good</li>
+                    <li><strong>650-699:</strong> Fair</li>
+                    <li><strong>600-649:</strong> Poor</li>
+                    <li><strong>300-599:</strong> Very Poor</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-warning-sign"></span> Important
+                </h3>
+            </div>
+            <div class="panel-body">
+                <p>Changes to customer information may affect existing loan applications and credit evaluations.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        $(document).ready(function () {
+            // Add custom validation methods
+            $.validator.addMethod("minage", function (value, element) {
+                if (!value) return false;
+                var dob = new Date(value);
+                var today = new Date();
+                var age = today.getFullYear() - dob.getFullYear();
+                var monthDiff = today.getMonth() - dob.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                    age--;
+                }
+                return age >= 18;
+            }, "Customer must be at least 18 years old");
+
+            // Configure validation rules
+            $("form").validate({
+                rules: {
+                    FirstName: {
+                        required: true,
+                        minlength: 2,
+                        maxlength: 50
+                    },
+                    LastName: {
+                        required: true,
+                        minlength: 2,
+                        maxlength: 50
+                    },
+                    DateOfBirth: {
+                        required: true,
+                        date: true,
+                        minage: true
+                    },
+                    AnnualIncome: {
+                        required: true,
+                        number: true,
+                        min: 0.01
+                    },
+                    CreditScore: {
+                        required: true,
+                        digits: true,
+                        range: [300, 850]
+                    },
+                    Email: {
+                        required: true,
+                        email: true,
+                        maxlength: 100
+                    },
+                    Phone: {
+                        required: true,
+                        minlength: 10,
+                        maxlength: 20
+                    },
+                    Address: {
+                        required: true,
+                        minlength: 10,
+                        maxlength: 200
+                    }
+                },
+                messages: {
+                    FirstName: {
+                        required: "First name is required",
+                        minlength: "First name must be at least 2 characters",
+                        maxlength: "First name cannot exceed 50 characters"
+                    },
+                    LastName: {
+                        required: "Last name is required",
+                        minlength: "Last name must be at least 2 characters",
+                        maxlength: "Last name cannot exceed 50 characters"
+                    },
+                    DateOfBirth: {
+                        required: "Date of birth is required",
+                        date: "Please enter a valid date"
+                    },
+                    AnnualIncome: {
+                        required: "Annual income is required",
+                        number: "Please enter a valid number",
+                        min: "Annual income must be greater than zero"
+                    },
+                    CreditScore: {
+                        required: "Credit score is required",
+                        digits: "Credit score must be a whole number",
+                        range: "Credit score must be between 300 and 850"
+                    },
+                    Email: {
+                        required: "Email is required",
+                        email: "Please enter a valid email address",
+                        maxlength: "Email cannot exceed 100 characters"
+                    },
+                    Phone: {
+                        required: "Phone number is required",
+                        minlength: "Phone number must be at least 10 characters",
+                        maxlength: "Phone number cannot exceed 20 characters"
+                    },
+                    Address: {
+                        required: "Address is required",
+                        minlength: "Address must be at least 10 characters",
+                        maxlength: "Address cannot exceed 200 characters"
+                    }
+                },
+                errorClass: "text-danger",
+                errorElement: "span",
+                highlight: function (element) {
+                    $(element).closest('.form-group').addClass('has-error');
+                },
+                unhighlight: function (element) {
+                    $(element).closest('.form-group').removeClass('has-error');
+                },
+                submitHandler: function (form) {
+                    form.submit();
+                }
+            });
+
+            // Age validation feedback
+            $('#DateOfBirth').on('change', function () {
+                $(this).valid(); // Trigger validation
+            });
+
+            // Credit score validation feedback
+            $('#CreditScore').on('input', function () {
+                var score = parseInt($(this).val());
+                var $helpBlock = $(this).parent().find('.help-block');
+
+                if (score >= 750) {
+                    $helpBlock.html('Valid range: 300-850 <span class="text-success">(Excellent)</span>');
+                } else if (score >= 700) {
+                    $helpBlock.html('Valid range: 300-850 <span class="text-success">(Good)</span>');
+                } else if (score >= 650) {
+                    $helpBlock.html('Valid range: 300-850 <span class="text-warning">(Fair)</span>');
+                } else if (score >= 600) {
+                    $helpBlock.html('Valid range: 300-850 <span class="text-warning">(Poor)</span>');
+                } else if (score >= 300) {
+                    $helpBlock.html('Valid range: 300-850 <span class="text-danger">(Very Poor)</span>');
+                } else {
+                    $helpBlock.html('Valid range: 300-850');
+                }
+            });
+
+            // Phone formatting
+            $('#Phone').on('input', function () {
+                var value = $(this).val().replace(/\D/g, '');
+                if (value.length >= 3) {
+                    value = '(' + value.substring(0, 3) + ') ' + value.substring(3);
+                }
+                if (value.length >= 9) {
+                    value = value.substring(0, 9) + '-' + value.substring(9, 13);
+                }
+                $(this).val(value);
+            });
+
+            // Initialize credit score feedback
+            $('#CreditScore').trigger('input');
+        });
+    </script>
+}

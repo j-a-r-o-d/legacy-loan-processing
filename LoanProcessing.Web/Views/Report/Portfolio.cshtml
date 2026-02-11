@@ -1,0 +1,569 @@
+@model LoanProcessing.Web.Models.PortfolioReport
+
+@{
+    ViewBag.Title = "AnyBank Portfolio Report";
+    var hasData = (Model is object) && (Model.Summary is object);
+}
+
+<h2>
+    <span class="glyphicon glyphicon-stats"></span> AnyBank Portfolio Report
+</h2>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-filter"></span> Report Filters
+                </h3>
+            </div>
+            <div class="panel-body">
+                @using (Html.BeginForm("Portfolio", "Report", FormMethod.Get, new { @class = "form-horizontal" }))
+                {
+                    <div class="form-group">
+                        <label for="startDate" class="col-sm-2 control-label">Start Date:</label>
+                        <div class="col-sm-3">
+                            <input type="date" 
+                                   name="startDate" 
+                                   id="startDate" 
+                                   class="form-control" 
+                                   value="@(ViewBag.StartDate != null ? ((DateTime)ViewBag.StartDate).ToString("yyyy-MM-dd") : "")" />
+                            <span class="help-block">Optional: Filter loans from this date</span>
+                        </div>
+
+                        <label for="endDate" class="col-sm-2 control-label">End Date:</label>
+                        <div class="col-sm-3">
+                            <input type="date" 
+                                   name="endDate" 
+                                   id="endDate" 
+                                   class="form-control" 
+                                   value="@(ViewBag.EndDate != null ? ((DateTime)ViewBag.EndDate).ToString("yyyy-MM-dd") : "")" />
+                            <span class="help-block">Optional: Filter loans until this date</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loanType" class="col-sm-2 control-label">Loan Type:</label>
+                        <div class="col-sm-3">
+                            @Html.DropDownList("loanType", 
+                                ViewBag.LoanTypes as SelectList, 
+                                "All Loan Types", 
+                                new { @class = "form-control" })
+                            <span class="help-block">Optional: Filter by loan type</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-sm-offset-2 col-sm-10">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="glyphicon glyphicon-refresh"></span> Generate Report
+                            </button>
+                            @Html.ActionLink("Clear Filters", "Portfolio", null, new { @class = "btn btn-default" })
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (hasData)
+{
+    <!-- Report Header with Applied Filters -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        <span class="glyphicon glyphicon-info-sign"></span> Report Information
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <p><strong>Generated:</strong> @DateTime.Now.ToString("MMMM dd, yyyy 'at' h:mm tt")</p>
+                    
+                    @{
+                        var hasDateRange = Model.StartDate.HasValue || Model.EndDate.HasValue;
+                    }
+                    @if (hasDateRange)
+                    {
+                        <p>
+                            <strong>Date Range:</strong> 
+                            @(Model.StartDate.HasValue ? Model.StartDate.Value.ToString("MM/dd/yyyy") : "Beginning")
+                            to
+                            @(Model.EndDate.HasValue ? Model.EndDate.Value.ToString("MM/dd/yyyy") : "Present")
+                        </p>
+                    }
+                    else
+                    {
+                        <p><strong>Date Range:</strong> All Time</p>
+                    }
+                    
+                    @{
+                        var hasLoanTypeFilter = !string.IsNullOrWhiteSpace(Model.LoanType);
+                    }
+                    @if (hasLoanTypeFilter)
+                    {
+                        <p><strong>Loan Type Filter:</strong> <span class="label label-primary">@Model.LoanType</span></p>
+                    }
+                    else
+                    {
+                        <p><strong>Loan Type Filter:</strong> All Types</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portfolio Summary Section -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-success">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        <span class="glyphicon glyphicon-list-alt"></span> Portfolio Summary
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6">
+                            <div class="well text-center">
+                                <h4>Total Loans</h4>
+                                <p class="lead"><strong>@Model.Summary.TotalLoans</strong></p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="well text-center">
+                                <h4>Approved Loans</h4>
+                                <p class="lead text-success"><strong>@Model.Summary.ApprovedLoans</strong></p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="well text-center">
+                                <h4>Rejected Loans</h4>
+                                <p class="lead text-danger"><strong>@Model.Summary.RejectedLoans</strong></p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="well text-center">
+                                <h4>Pending Loans</h4>
+                                <p class="lead text-warning"><strong>@Model.Summary.PendingLoans</strong></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr class="success">
+                                    <th>Metric</th>
+                                    <th class="text-right">Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Total Approved Amount</strong></td>
+                                    <td class="text-right">@Model.Summary.TotalApprovedAmount.ToString("C")</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Average Approved Amount</strong></td>
+                                    <td class="text-right">
+                                        @{
+                                            var hasAvgAmount = Model.Summary.AverageApprovedAmount.HasValue;
+                                        }
+                                        @if (hasAvgAmount)
+                                        {
+                                            @Model.Summary.AverageApprovedAmount.Value.ToString("C")
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Average Interest Rate</strong></td>
+                                    <td class="text-right">
+                                        @{
+                                            var hasAvgRate = Model.Summary.AverageInterestRate.HasValue;
+                                        }
+                                        @if (hasAvgRate)
+                                        {
+                                            @Model.Summary.AverageInterestRate.Value.ToString("F2")<text>%</text>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Average Risk Score</strong></td>
+                                    <td class="text-right">
+                                        @{
+                                            var hasAvgRisk = Model.Summary.AverageRiskScore.HasValue;
+                                        }
+                                        @if (hasAvgRisk)
+                                        {
+                                            var riskScore = Model.Summary.AverageRiskScore.Value;
+                                            var riskClass = riskScore <= 30 ? "text-success" : riskScore <= 50 ? "text-warning" : "text-danger";
+                                            <span class="@riskClass"><strong>@riskScore</strong></span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loan Type Breakdown Section -->
+    if (Model.LoanTypeBreakdown is object && Model.LoanTypeBreakdown.Any())
+    {
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <span class="glyphicon glyphicon-th-list"></span> Loan Type Breakdown
+                        </h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered table-hover" id="loanTypeTable">
+                                <thead>
+                                    <tr class="info">
+                                        <th>Loan Type</th>
+                                        <th class="text-right">Total Applications</th>
+                                        <th class="text-right">Approved Count</th>
+                                        <th class="text-right">Approval Rate</th>
+                                        <th class="text-right">Total Amount</th>
+                                        <th class="text-right">Average Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var breakdown in Model.LoanTypeBreakdown)
+                                    {
+                                        var approvalRate = breakdown.TotalApplications > 0 
+                                            ? (breakdown.ApprovedCount * 100.0 / breakdown.TotalApplications) 
+                                            : 0;
+                                        
+                                        <tr>
+                                            <td>
+                                                <strong>@breakdown.LoanType</strong>
+                                            </td>
+                                            <td class="text-right">@breakdown.TotalApplications</td>
+                                            <td class="text-right">
+                                                <span class="label label-success">@breakdown.ApprovedCount</span>
+                                            </td>
+                                            <td class="text-right">
+                                                @approvalRate.ToString("F1")<text>%</text>
+                                            </td>
+                                            <td class="text-right">@breakdown.TotalAmount.ToString("C")</td>
+                                            <td class="text-right">
+                                                @if (breakdown.AvgInterestRate.HasValue)
+                                                {
+                                                    @breakdown.AvgInterestRate.Value.ToString("F2")<text>%</text>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="active">
+                                        <td><strong>Total</strong></td>
+                                        <td class="text-right"><strong>@Model.LoanTypeBreakdown.Sum(b => b.TotalApplications)</strong></td>
+                                        <td class="text-right"><strong>@Model.LoanTypeBreakdown.Sum(b => b.ApprovedCount)</strong></td>
+                                        <td class="text-right">
+                                            @{
+                                                var totalApps = Model.LoanTypeBreakdown.Sum(b => b.TotalApplications);
+                                                var totalApproved = Model.LoanTypeBreakdown.Sum(b => b.ApprovedCount);
+                                                var overallRate = totalApps > 0 ? (totalApproved * 100.0 / totalApps) : 0;
+                                            }
+                                            <strong>@overallRate.ToString("F1")%</strong>
+                                        </td>
+                                        <td class="text-right"><strong>@Model.LoanTypeBreakdown.Sum(b => b.TotalAmount).ToString("C")</strong></td>
+                                        <td class="text-right">
+                                            @{
+                                                var avgRate = Model.LoanTypeBreakdown
+                                                    .Where(b => b.AvgInterestRate.HasValue)
+                                                    .Select(b => b.AvgInterestRate.Value)
+                                                    .DefaultIfEmpty(0)
+                                                    .Average();
+                                            }
+                                            <strong>@avgRate.ToString("F2")%</strong>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Risk Distribution Section -->
+    if (Model.RiskDistribution is object && Model.RiskDistribution.Any())
+    {
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-warning">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <span class="glyphicon glyphicon-warning-sign"></span> Risk Distribution
+                        </h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered table-hover" id="riskDistributionTable">
+                                <thead>
+                                    <tr class="warning">
+                                        <th>Risk Category</th>
+                                        <th class="text-right">Loan Count</th>
+                                        <th class="text-right">Total Amount</th>
+                                        <th class="text-right">Percentage of Portfolio</th>
+                                        <th class="text-right">Average Rate</th>
+                                        <th class="text-right">Visual Distribution</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        var totalRiskAmount = Model.RiskDistribution.Sum(r => r.TotalAmount);
+                                    }
+                                    @foreach (var risk in Model.RiskDistribution)
+                                    {
+                                        var percentage = totalRiskAmount > 0 
+                                            ? (risk.TotalAmount / totalRiskAmount * 100) 
+                                            : 0;
+                                        
+                                        var progressBarClass = "progress-bar-success";
+                                        var labelClass = "label-success";
+                                        
+                                        if (risk.RiskCategory.Contains("Medium"))
+                                        {
+                                            progressBarClass = "progress-bar-warning";
+                                            labelClass = "label-warning";
+                                        }
+                                        else if (risk.RiskCategory.Contains("High") || risk.RiskCategory.Contains("Very High"))
+                                        {
+                                            progressBarClass = "progress-bar-danger";
+                                            labelClass = "label-danger";
+                                        }
+                                        
+                                        <tr>
+                                            <td>
+                                                <span class="label @labelClass">@risk.RiskCategory</span>
+                                            </td>
+                                            <td class="text-right">@risk.LoanCount</td>
+                                            <td class="text-right">@risk.TotalAmount.ToString("C")</td>
+                                            <td class="text-right">@percentage.ToString("F2")<text>%</text></td>
+                                            <td class="text-right">
+                                                @if (risk.AvgInterestRate.HasValue)
+                                                {
+                                                    @risk.AvgInterestRate.Value.ToString("F2")<text>%</text>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">N/A</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="margin-bottom: 0;">
+                                                    <div class="progress-bar @progressBarClass" 
+                                                         role="progressbar" 
+                                                         aria-valuenow="@percentage" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="100" 
+                                                         style="width: @percentage.ToString("F2")%">
+                                                        @if (percentage > 5)
+                                                        {
+                                                            <span>@percentage.ToString("F1")%</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="active">
+                                        <td><strong>Total</strong></td>
+                                        <td class="text-right"><strong>@Model.RiskDistribution.Sum(r => r.LoanCount)</strong></td>
+                                        <td class="text-right"><strong>@totalRiskAmount.ToString("C")</strong></td>
+                                        <td class="text-right"><strong>100.00%</strong></td>
+                                        <td class="text-right">
+                                            @{
+                                                var avgRiskRate = Model.RiskDistribution
+                                                    .Where(r => r.AvgInterestRate.HasValue)
+                                                    .Select(r => r.AvgInterestRate.Value)
+                                                    .DefaultIfEmpty(0)
+                                                    .Average();
+                                            }
+                                            <strong>@avgRiskRate.ToString("F2")%</strong>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Action Buttons -->
+    <div class="row">
+        <div class="col-md-12">
+            <button type="button" class="btn btn-default" onclick="window.print();">
+                <span class="glyphicon glyphicon-print"></span> Print Report
+            </button>
+            @using (Html.BeginForm("Portfolio", "Report", FormMethod.Get, new { style = "display: inline;" }))
+            {
+                <input type="hidden" name="startDate" value="@(ViewBag.StartDate != null ? ((DateTime)ViewBag.StartDate).ToString("yyyy-MM-dd") : "")" />
+                <input type="hidden" name="endDate" value="@(ViewBag.EndDate != null ? ((DateTime)ViewBag.EndDate).ToString("yyyy-MM-dd") : "")" />
+                <input type="hidden" name="loanType" value="@ViewBag.LoanType" />
+                <input type="hidden" name="export" value="true" />
+                <button type="submit" class="btn btn-success">
+                    <span class="glyphicon glyphicon-download-alt"></span> Export to CSV
+                </button>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <strong>No report data available.</strong> Please generate a report using the filters above.
+    </div>
+}
+
+<style type="text/css">
+    /* Custom styles for portfolio report */
+    .well {
+        background-color: #f9f9f9;
+        border: 1px solid #e3e3e3;
+        border-radius: 4px;
+        box-shadow: inset 0 1px 1px rgba(0,0,0,.05);
+        margin-bottom: 20px;
+        min-height: 120px;
+    }
+
+    .well h4 {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        color: #555;
+        font-size: 16px;
+    }
+
+    .well .lead {
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+
+    .panel-body .row {
+        margin-bottom: 15px;
+    }
+
+    .progress {
+        height: 25px;
+        margin-bottom: 0;
+    }
+
+    .progress-bar {
+        line-height: 25px;
+        font-weight: bold;
+    }
+
+    .table > thead > tr > th {
+        background-color: #f5f5f5;
+        font-weight: bold;
+    }
+
+    .table > tfoot > tr > td {
+        background-color: #f9f9f9;
+        font-weight: bold;
+        border-top: 2px solid #ddd;
+    }
+
+    /* Print-specific styles */
+    @@media print {
+        .btn, .btn-group, .panel-heading, .form-group, .alert, .help-block {
+            display: none !important;
+        }
+
+        .panel {
+            border: 1px solid #000 !important;
+            page-break-inside: avoid;
+        }
+
+        body {
+            font-size: 11px;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        h3, h4 {
+            font-size: 16px;
+            page-break-after: avoid;
+        }
+
+        table {
+            page-break-inside: avoid;
+            font-size: 10px;
+        }
+
+        .well {
+            border: 1px solid #000 !important;
+            box-shadow: none !important;
+        }
+    }
+
+    /* Responsive adjustments */
+    @@media (max-width: 768px) {
+        .well .lead {
+            font-size: 24px;
+        }
+
+        .well h4 {
+            font-size: 14px;
+        }
+
+        .btn-group-lg > .btn {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // Add tooltips to help text
+            $('[data-toggle="tooltip"]').tooltip();
+
+            // Highlight rows on hover for better readability
+            $('.table-hover tbody tr').hover(
+                function () {
+                    $(this).addClass('info');
+                },
+                function () {
+                    $(this).removeClass('info');
+                }
+            );
+        });
+    </script>
+}

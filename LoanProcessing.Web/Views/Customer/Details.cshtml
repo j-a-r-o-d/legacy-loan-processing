@@ -1,0 +1,123 @@
+@model LoanProcessing.Web.Models.Customer
+
+@{
+    ViewBag.Title = "Customer Details";
+}
+
+<h2>Customer Details</h2>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    @Model.FirstName @Model.LastName
+                    <span class="label @(Model.CreditScore >= 700 ? "label-success" : Model.CreditScore >= 650 ? "label-warning" : "label-danger")" style="margin-left: 10px;">
+                        Credit Score: @Model.CreditScore
+                    </span>
+                </h3>
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Personal Information</h4>
+                        <dl class="dl-horizontal">
+                            <dt>Customer ID:</dt>
+                            <dd>@Model.CustomerId</dd>
+
+                            <dt>First Name:</dt>
+                            <dd>@Model.FirstName</dd>
+
+                            <dt>Last Name:</dt>
+                            <dd>@Model.LastName</dd>
+
+                            <dt>SSN:</dt>
+                            <dd>@Model.SSN</dd>
+
+                            <dt>Date of Birth:</dt>
+                            <dd>@Model.DateOfBirth.ToString("MM/dd/yyyy")</dd>
+
+                            <dt>Age:</dt>
+                            <dd>@((DateTime.Now.Year - Model.DateOfBirth.Year) - (DateTime.Now.DayOfYear < Model.DateOfBirth.DayOfYear ? 1 : 0)) years</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Financial Information</h4>
+                        <dl class="dl-horizontal">
+                            <dt>Annual Income:</dt>
+                            <dd>@Model.AnnualIncome.ToString("C")</dd>
+
+                            <dt>Credit Score:</dt>
+                            <dd>
+                                <span class="label @(Model.CreditScore >= 700 ? "label-success" : Model.CreditScore >= 650 ? "label-warning" : "label-danger")">
+                                    @Model.CreditScore
+                                </span>
+                                @if (Model.CreditScore >= 750)
+                                {
+                                    <span class="text-success">(Excellent)</span>
+                                }
+                                else if (Model.CreditScore >= 700)
+                                {
+                                    <span class="text-success">(Good)</span>
+                                }
+                                else if (Model.CreditScore >= 650)
+                                {
+                                    <span class="text-warning">(Fair)</span>
+                                }
+                                else if (Model.CreditScore >= 600)
+                                {
+                                    <span class="text-warning">(Poor)</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger">(Very Poor)</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <h4>Contact Information</h4>
+                        <dl class="dl-horizontal">
+                            <dt>Email:</dt>
+                            <dd>
+                                <a href="mailto:@Model.Email">@Model.Email</a>
+                            </dd>
+
+                            <dt>Phone:</dt>
+                            <dd>@Model.Phone</dd>
+
+                            <dt>Address:</dt>
+                            <dd>@Model.Address</dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <h4>Record Information</h4>
+                        <dl class="dl-horizontal">
+                            <dt>Created Date:</dt>
+                            <dd>@Model.CreatedDate.ToString("MM/dd/yyyy hh:mm tt")</dd>
+
+                            @if (Model.ModifiedDate.HasValue)
+                            {
+                                <dt>Last Modified:</dt>
+                                <dd>@Model.ModifiedDate.Value.ToString("MM/dd/yyyy hh:mm tt")</dd>
+                            }
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-footer">
+                <div class="btn-group" role="group">
+                    @Html.ActionLink("Edit Customer", "Edit", new { id = Model.CustomerId }, new { @class = "btn btn-primary" })
+                    @Html.ActionLink("Apply for Loan", "Apply", "Loan", new { customerId = Model.CustomerId }, new { @class = "btn btn-success" })
+                    @Html.ActionLink("Back to List", "Index", null, new { @class = "btn btn-default" })
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,225 @@
+@model IEnumerable<LoanProcessing.Web.Models.InterestRate>
+
+@{
+    ViewBag.Title = "Interest Rates";
+}
+
+<h2>Interest Rate Management</h2>
+
+<div class="row">
+    <div class="col-md-12">
+        <p>
+            @Html.ActionLink("Create New Rate", "Create", null, new { @class = "btn btn-primary" })
+        </p>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Current Interest Rates by Loan Type</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="ratesTable">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <a href="#" class="sort-link" data-sort="LoanType">
+                                            Loan Type
+                                            <span class="glyphicon glyphicon-sort"></span>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="#" class="sort-link" data-sort="MinCreditScore">
+                                            Credit Score Range
+                                            <span class="glyphicon glyphicon-sort"></span>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="#" class="sort-link" data-sort="MinTermMonths">
+                                            Term Range (Months)
+                                            <span class="glyphicon glyphicon-sort"></span>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="#" class="sort-link" data-sort="Rate">
+                                            Rate (%)
+                                            <span class="glyphicon glyphicon-sort"></span>
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a href="#" class="sort-link" data-sort="EffectiveDate">
+                                            Effective Date
+                                            <span class="glyphicon glyphicon-sort"></span>
+                                        </a>
+                                    </th>
+                                    <th>Expiration Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var rate in Model)
+                                {
+                                    var isActive = rate.EffectiveDate <= DateTime.Today && 
+                                                   (rate.ExpirationDate == null || rate.ExpirationDate >= DateTime.Today);
+                                    var isFuture = rate.EffectiveDate > DateTime.Today;
+                                    var isExpired = rate.ExpirationDate != null && rate.ExpirationDate < DateTime.Today;
+
+                                    <tr class="@(isExpired ? "text-muted" : "")">
+                                        <td>
+                                            <strong>@rate.LoanType</strong>
+                                        </td>
+                                        <td>
+                                            @rate.MinCreditScore - @rate.MaxCreditScore
+                                        </td>
+                                        <td>
+                                            @rate.MinTermMonths - @rate.MaxTermMonths
+                                        </td>
+                                        <td>
+                                            <span class="label @(rate.Rate <= 5.0m ? "label-success" : rate.Rate <= 10.0m ? "label-info" : "label-warning")">
+                                                @rate.Rate.ToString("0.00")%
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @rate.EffectiveDate.ToString("MM/dd/yyyy")
+                                        </td>
+                                        <td>
+                                            @if (rate.ExpirationDate.HasValue)
+                                            {
+                                                @rate.ExpirationDate.Value.ToString("MM/dd/yyyy")
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">No expiration</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (isActive)
+                                            {
+                                                <span class="label label-success">Active</span>
+                                            }
+                                            else if (isFuture)
+                                            {
+                                                <span class="label label-info">Future</span>
+                                            }
+                                            else if (isExpired)
+                                            {
+                                                <span class="label label-default">Expired</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @Html.ActionLink("Edit", "Edit", new { id = rate.RateId }, new { @class = "btn btn-sm btn-default" })
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        <span class="glyphicon glyphicon-info-sign"></span> Interest Rate Information
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <h4>Rate Status</h4>
+                    <ul>
+                        <li><span class="label label-success">Active</span> - Currently in effect for new loan applications</li>
+                        <li><span class="label label-info">Future</span> - Will become effective on the specified date</li>
+                        <li><span class="label label-default">Expired</span> - No longer in effect, historical record only</li>
+                    </ul>
+
+                    <h4>Rate Management</h4>
+                    <p>
+                        Interest rates are applied to new loan applications based on the customer's credit score, 
+                        loan type, and loan term. The system automatically selects the appropriate rate from active 
+                        rate tables when evaluating credit.
+                    </p>
+                    <p>
+                        <strong>Note:</strong> Changes to interest rates only affect new loan applications. 
+                        Existing approved loans retain their original interest rates.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">
+        <strong>No interest rates found.</strong>
+        Click "Create New Rate" to add interest rate tables for loan pricing.
+    </div>
+}
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            // Simple client-side sorting
+            var sortDirection = {};
+
+            $('.sort-link').click(function (e) {
+                e.preventDefault();
+                var sortField = $(this).data('sort');
+                var $table = $('#ratesTable');
+                var $tbody = $table.find('tbody');
+                var $rows = $tbody.find('tr').toArray();
+
+                // Toggle sort direction
+                sortDirection[sortField] = sortDirection[sortField] === 'asc' ? 'desc' : 'asc';
+
+                // Update sort icons
+                $('.sort-link .glyphicon').removeClass('glyphicon-sort-by-attributes glyphicon-sort-by-attributes-alt').addClass('glyphicon-sort');
+                if (sortDirection[sortField] === 'asc') {
+                    $(this).find('.glyphicon').removeClass('glyphicon-sort').addClass('glyphicon-sort-by-attributes');
+                } else {
+                    $(this).find('.glyphicon').removeClass('glyphicon-sort').addClass('glyphicon-sort-by-attributes-alt');
+                }
+
+                // Sort rows
+                $rows.sort(function (a, b) {
+                    var aValue, bValue;
+                    var columnIndex = $('.sort-link').index($(e.target).closest('.sort-link'));
+
+                    if (sortField === 'MinCreditScore' || sortField === 'MinTermMonths') {
+                        var colIdx = sortField === 'MinCreditScore' ? 1 : 2;
+                        aValue = parseInt($(a).find('td').eq(colIdx).text().split('-')[0].trim());
+                        bValue = parseInt($(b).find('td').eq(colIdx).text().split('-')[0].trim());
+                    } else if (sortField === 'Rate') {
+                        aValue = parseFloat($(a).find('td').eq(3).find('.label').text().replace('%', ''));
+                        bValue = parseFloat($(b).find('td').eq(3).find('.label').text().replace('%', ''));
+                    } else if (sortField === 'EffectiveDate') {
+                        aValue = new Date($(a).find('td').eq(4).text().trim());
+                        bValue = new Date($(b).find('td').eq(4).text().trim());
+                    } else {
+                        aValue = $(a).find('td').eq(columnIndex).text().trim().toLowerCase();
+                        bValue = $(b).find('td').eq(columnIndex).text().trim().toLowerCase();
+                    }
+
+                    if (sortDirection[sortField] === 'asc') {
+                        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+                    } else {
+                        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+                    }
+                });
+
+                // Reattach sorted rows
+                $.each($rows, function (index, row) {
+                    $tbody.append(row);
+                });
+            });
+        });
+    </script>
+}

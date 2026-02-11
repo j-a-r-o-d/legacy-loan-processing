@@ -1,0 +1,324 @@
+@model LoanProcessing.Web.Models.InterestRate
+
+@{
+    ViewBag.Title = "Edit Interest Rate";
+}
+
+<h2>Edit Interest Rate</h2>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Interest Rate Details</h3>
+            </div>
+            <div class="panel-body">
+                @using (Html.BeginForm("Edit", "InterestRate", FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.HiddenFor(model => model.RateId)
+
+                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.LoanType, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.DropDownListFor(model => model.LoanType, (SelectList)ViewBag.LoanTypes, new { @class = "form-control" })
+                            @Html.ValidationMessageFor(model => model.LoanType, "", new { @class = "text-danger" })
+                            <span class="help-block">The type of loan this rate applies to</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.MinCreditScore, "Credit Score Range", new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="input-group">
+                                        <span class="input-group-addon">Min</span>
+                                        @Html.TextBoxFor(model => model.MinCreditScore, new { @class = "form-control", type = "number", min = "300", max = "850" })
+                                    </div>
+                                    @Html.ValidationMessageFor(model => model.MinCreditScore, "", new { @class = "text-danger" })
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="input-group">
+                                        <span class="input-group-addon">Max</span>
+                                        @Html.TextBoxFor(model => model.MaxCreditScore, new { @class = "form-control", type = "number", min = "300", max = "850" })
+                                    </div>
+                                    @Html.ValidationMessageFor(model => model.MaxCreditScore, "", new { @class = "text-danger" })
+                                </div>
+                            </div>
+                            <span class="help-block">Valid range: 300-850</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.MinTermMonths, "Term Range (Months)", new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="input-group">
+                                        <span class="input-group-addon">Min</span>
+                                        @Html.TextBoxFor(model => model.MinTermMonths, new { @class = "form-control", type = "number", min = "12", max = "360" })
+                                    </div>
+                                    @Html.ValidationMessageFor(model => model.MinTermMonths, "", new { @class = "text-danger" })
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="input-group">
+                                        <span class="input-group-addon">Max</span>
+                                        @Html.TextBoxFor(model => model.MaxTermMonths, new { @class = "form-control", type = "number", min = "12", max = "360" })
+                                    </div>
+                                    @Html.ValidationMessageFor(model => model.MaxTermMonths, "", new { @class = "text-danger" })
+                                </div>
+                            </div>
+                            <span class="help-block">Valid range: 12-360 months</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Rate, "Interest Rate (%)", new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            <div class="input-group">
+                                @Html.TextBoxFor(model => model.Rate, new { @class = "form-control", type = "number", step = "0.01", min = "0.01", max = "99.99" })
+                                <span class="input-group-addon">%</span>
+                            </div>
+                            @Html.ValidationMessageFor(model => model.Rate, "", new { @class = "text-danger" })
+                            <span class="help-block">Annual percentage rate (APR)</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.EffectiveDate, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.TextBoxFor(model => model.EffectiveDate, "{0:yyyy-MM-dd}", new { @class = "form-control", type = "date" })
+                            @Html.ValidationMessageFor(model => model.EffectiveDate, "", new { @class = "text-danger" })
+                            <span class="help-block">Date when this rate becomes effective</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.ExpirationDate, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.TextBoxFor(model => model.ExpirationDate, "{0:yyyy-MM-dd}", new { @class = "form-control", type = "date" })
+                            @Html.ValidationMessageFor(model => model.ExpirationDate, "", new { @class = "text-danger" })
+                            <span class="help-block">Optional: Leave blank for no expiration</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-md-offset-3 col-md-9">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="glyphicon glyphicon-floppy-disk"></span> Update Interest Rate
+                            </button>
+                            @Html.ActionLink("Cancel", "Index", null, new { @class = "btn btn-default" })
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-info-sign"></span> Rate Configuration Guide
+                </h3>
+            </div>
+            <div class="panel-body">
+                <h4>Loan Types</h4>
+                <ul>
+                    <li><strong>Personal:</strong> Unsecured personal loans</li>
+                    <li><strong>Auto:</strong> Vehicle financing</li>
+                    <li><strong>Mortgage:</strong> Home loans</li>
+                    <li><strong>Business:</strong> Business financing</li>
+                </ul>
+
+                <h4>Credit Score Tiers</h4>
+                <ul>
+                    <li><strong>750-850:</strong> Excellent credit</li>
+                    <li><strong>700-749:</strong> Good credit</li>
+                    <li><strong>650-699:</strong> Fair credit</li>
+                    <li><strong>600-649:</strong> Poor credit</li>
+                    <li><strong>300-599:</strong> Very poor credit</li>
+                </ul>
+
+                <h4>Validation Rules</h4>
+                <ul>
+                    <li>All fields except Expiration Date are required</li>
+                    <li>Min credit score must be ≤ Max credit score</li>
+                    <li>Min term must be ≤ Max term</li>
+                    <li>Rate must be greater than 0</li>
+                    <li>Expiration date must be after effective date</li>
+                </ul>
+
+                <h4>Important Notes</h4>
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> Changes to interest rates only affect new loan applications. 
+                    Existing approved loans retain their original interest rates.
+                </div>
+                <p>
+                    Consider setting an expiration date on the current rate before creating a new one 
+                    to maintain historical accuracy.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        $(document).ready(function () {
+            // Add custom validation methods
+            $.validator.addMethod("creditscorerange", function (value, element, params) {
+                var minScore = parseInt($('#MinCreditScore').val());
+                var maxScore = parseInt($('#MaxCreditScore').val());
+                return !minScore || !maxScore || minScore <= maxScore;
+            }, "Minimum credit score must be less than or equal to maximum credit score");
+
+            $.validator.addMethod("termrange", function (value, element, params) {
+                var minTerm = parseInt($('#MinTermMonths').val());
+                var maxTerm = parseInt($('#MaxTermMonths').val());
+                return !minTerm || !maxTerm || minTerm <= maxTerm;
+            }, "Minimum term must be less than or equal to maximum term");
+
+            $.validator.addMethod("expirationafter", function (value, element) {
+                if (!value) return true; // Optional field
+                var effectiveDate = new Date($('#EffectiveDate').val());
+                var expirationDate = new Date(value);
+                return expirationDate > effectiveDate;
+            }, "Expiration date must be after effective date");
+
+            // Configure validation rules
+            $("form").validate({
+                rules: {
+                    LoanType: {
+                        required: true
+                    },
+                    MinCreditScore: {
+                        required: true,
+                        digits: true,
+                        range: [300, 850],
+                        creditscorerange: true
+                    },
+                    MaxCreditScore: {
+                        required: true,
+                        digits: true,
+                        range: [300, 850],
+                        creditscorerange: true
+                    },
+                    MinTermMonths: {
+                        required: true,
+                        digits: true,
+                        range: [12, 360],
+                        termrange: true
+                    },
+                    MaxTermMonths: {
+                        required: true,
+                        digits: true,
+                        range: [12, 360],
+                        termrange: true
+                    },
+                    Rate: {
+                        required: true,
+                        number: true,
+                        range: [0.01, 99.99]
+                    },
+                    EffectiveDate: {
+                        required: true,
+                        date: true
+                    },
+                    ExpirationDate: {
+                        date: true,
+                        expirationafter: true
+                    }
+                },
+                messages: {
+                    LoanType: {
+                        required: "Please select a loan type"
+                    },
+                    MinCreditScore: {
+                        required: "Minimum credit score is required",
+                        digits: "Credit score must be a whole number",
+                        range: "Credit score must be between 300 and 850"
+                    },
+                    MaxCreditScore: {
+                        required: "Maximum credit score is required",
+                        digits: "Credit score must be a whole number",
+                        range: "Credit score must be between 300 and 850"
+                    },
+                    MinTermMonths: {
+                        required: "Minimum term is required",
+                        digits: "Term must be a whole number",
+                        range: "Term must be between 12 and 360 months"
+                    },
+                    MaxTermMonths: {
+                        required: "Maximum term is required",
+                        digits: "Term must be a whole number",
+                        range: "Term must be between 12 and 360 months"
+                    },
+                    Rate: {
+                        required: "Interest rate is required",
+                        number: "Please enter a valid number",
+                        range: "Rate must be between 0.01 and 99.99"
+                    },
+                    EffectiveDate: {
+                        required: "Effective date is required",
+                        date: "Please enter a valid date"
+                    },
+                    ExpirationDate: {
+                        date: "Please enter a valid date"
+                    }
+                },
+                errorClass: "text-danger",
+                errorElement: "span",
+                highlight: function (element) {
+                    $(element).closest('.form-group').addClass('has-error');
+                },
+                unhighlight: function (element) {
+                    $(element).closest('.form-group').removeClass('has-error');
+                },
+                submitHandler: function (form) {
+                    form.submit();
+                }
+            });
+
+            // Trigger validation when related fields change
+            $('#MinCreditScore, #MaxCreditScore').on('change', function () {
+                $('#MinCreditScore').valid();
+                $('#MaxCreditScore').valid();
+            });
+
+            $('#MinTermMonths, #MaxTermMonths').on('change', function () {
+                $('#MinTermMonths').valid();
+                $('#MaxTermMonths').valid();
+            });
+
+            $('#EffectiveDate, #ExpirationDate').on('change', function () {
+                $('#ExpirationDate').valid();
+            });
+
+            // Rate feedback
+            $('#Rate').on('input', function () {
+                var rate = parseFloat($(this).val());
+                var $helpBlock = $(this).parent().parent().find('.help-block');
+
+                if (rate > 0 && rate <= 5.0) {
+                    $helpBlock.html('Annual percentage rate (APR) <span class="text-success">(Excellent rate)</span>');
+                } else if (rate > 5.0 && rate <= 10.0) {
+                    $helpBlock.html('Annual percentage rate (APR) <span class="text-info">(Good rate)</span>');
+                } else if (rate > 10.0 && rate <= 20.0) {
+                    $helpBlock.html('Annual percentage rate (APR) <span class="text-warning">(High rate)</span>');
+                } else if (rate > 20.0) {
+                    $helpBlock.html('Annual percentage rate (APR) <span class="text-danger">(Very high rate)</span>');
+                } else {
+                    $helpBlock.html('Annual percentage rate (APR)');
+                }
+            });
+
+            // Trigger rate feedback on page load
+            $('#Rate').trigger('input');
+        });
+    </script>
+}

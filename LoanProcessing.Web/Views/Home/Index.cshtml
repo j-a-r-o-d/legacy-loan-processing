@@ -1,0 +1,125 @@
+@{
+    ViewBag.Title = "Home";
+}
+
+<div class="jumbotron">
+    <h1>AnyBank Loan Processing</h1>
+    <p class="lead">Welcome to AnyBank's Legacy .NET Framework Loan Processing Application</p>
+    <p>This application demonstrates typical enterprise patterns from 2010-2015 with business logic in MSSQL stored procedures.</p>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="panel panel-primary" style="min-height: 320px; display: flex; flex-direction: column;">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-user"></span> Customer Management
+                </h3>
+            </div>
+            <div class="panel-body" style="flex: 1; display: flex; flex-direction: column;">
+                <div style="flex: 1;">
+                    <p>Manage customer profiles, credit scores, and financial information.</p>
+                    <ul>
+                        <li>Create and edit customer records</li>
+                        <li>Search customers by name, ID, or SSN</li>
+                        <li>View customer details and credit scores</li>
+                    </ul>
+                </div>
+                <p style="margin-bottom: 0;">
+                    @Html.ActionLink("Manage Customers", "Index", "Customer", null, new { @class = "btn btn-primary" })
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="panel panel-success" style="min-height: 320px; display: flex; flex-direction: column;">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-list-alt"></span> Loan Applications
+                </h3>
+            </div>
+            <div class="panel-body" style="flex: 1; display: flex; flex-direction: column;">
+                <div style="flex: 1;">
+                    <p>Process loan applications with automated credit evaluation.</p>
+                    <ul>
+                        <li>Submit new loan applications</li>
+                        <li>Evaluate credit and calculate risk scores</li>
+                        <li>Approve or reject applications</li>
+                        <li>Generate payment schedules</li>
+                    </ul>
+                </div>
+                <p style="margin-bottom: 0;">
+                    @Html.ActionLink("View Loans", "Index", "Loan", null, new { @class = "btn btn-success" })
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="panel panel-info" style="min-height: 320px; display: flex; flex-direction: column;">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-stats"></span> Portfolio Reports
+                </h3>
+            </div>
+            <div class="panel-body" style="flex: 1; display: flex; flex-direction: column;">
+                <div style="flex: 1;">
+                    <p>Generate comprehensive portfolio and risk analysis reports.</p>
+                    <ul>
+                        <li>Portfolio summary and metrics</li>
+                        <li>Loan type breakdowns</li>
+                        <li>Risk distribution analysis</li>
+                        <li>Export to CSV</li>
+                    </ul>
+                </div>
+                <p style="margin-bottom: 0;">
+                    @Html.ActionLink("View Reports", "Portfolio", "Report", null, new { @class = "btn btn-info" })
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-info-sign"></span> About This Application
+                </h3>
+            </div>
+            <div class="panel-body">
+                <h4>Technology Stack</h4>
+                <ul>
+                    <li><strong>Framework:</strong> .NET Framework 4.7.2</li>
+                    <li><strong>Web Framework:</strong> ASP.NET MVC 5</li>
+                    <li><strong>ORM:</strong> Entity Framework 6.x (for basic CRUD)</li>
+                    <li><strong>Data Access:</strong> ADO.NET (for stored procedure calls)</li>
+                    <li><strong>Database:</strong> Microsoft SQL Server</li>
+                    <li><strong>UI:</strong> Razor views with Bootstrap 3</li>
+                </ul>
+
+                <h4>Key Features</h4>
+                <ul>
+                    <li>Business logic implemented in MSSQL stored procedures</li>
+                    <li>Layered architecture: Presentation → Services → Repositories → Database</li>
+                    <li>Manual dependency injection (legacy pattern)</li>
+                    <li>Client-side validation with jQuery</li>
+                    <li>Responsive design with Bootstrap 3</li>
+                </ul>
+
+                <h4>Purpose</h4>
+                <p>
+                    This application serves as a realistic example of AnyBank's loan processing system, demonstrating:
+                </p>
+                <ul>
+                    <li>Database-centric business logic</li>
+                    <li>Tight coupling between application and database layers</li>
+                    <li>Limited testability due to database dependencies</li>
+                    <li>Patterns commonly found in legacy financial services applications</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

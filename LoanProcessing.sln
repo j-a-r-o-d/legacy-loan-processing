@@ -1,0 +1,28 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28701.123
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoanProcessing.Web", "LoanProcessing.Web\LoanProcessing.Web.csproj", "{8B5E7F3D-9C4A-4E2B-8F1A-3D5C6E7F8A9B}"
+EndProject
+Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "LoanProcessing.Database", "LoanProcessing.Database\LoanProcessing.Database.sqlproj", "{2A3B4C5D-6E7F-8A9B-0C1D-2E3F4A5B6C7D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8B5E7F3D-9C4A-4E2B-8F1A-3D5C6E7F8A9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B5E7F3D-9C4A-4E2B-8F1A-3D5C6E7F8A9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B5E7F3D-9C4A-4E2B-8F1A-3D5C6E7F8A9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B5E7F3D-9C4A-4E2B-8F1A-3D5C6E7F8A9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A3B4C5D-6E7F-8A9B-0C1D-2E3F4A5B6C7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A3B4C5D-6E7F-8A9B-0C1D-2E3F4A5B6C7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A3B4C5D-6E7F-8A9B-0C1D-2E3F4A5B6C7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A3B4C5D-6E7F-8A9B-0C1D-2E3F4A5B6C7D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

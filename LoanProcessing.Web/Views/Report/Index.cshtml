@@ -1,0 +1,211 @@
+@{
+    ViewBag.Title = "Reports";
+}
+
+<h2>
+    <span class="glyphicon glyphicon-stats"></span> Reports
+</h2>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="jumbotron">
+            <h3>Loan Processing Reports</h3>
+            <p class="lead">
+                Access comprehensive reports and analytics for loan portfolio management.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-briefcase"></span> Portfolio Report
+                </h3>
+            </div>
+            <div class="panel-body">
+                <p>
+                    View comprehensive portfolio statistics including:
+                </p>
+                <ul>
+                    <li>Total loans and approval rates</li>
+                    <li>Loan amounts and averages</li>
+                    <li>Breakdown by loan type</li>
+                    <li>Risk distribution analysis</li>
+                    <li>Interest rate trends</li>
+                </ul>
+                <p>
+                    <strong>Features:</strong>
+                </p>
+                <ul>
+                    <li><span class="glyphicon glyphicon-filter text-primary"></span> Filter by date range and loan type</li>
+                    <li><span class="glyphicon glyphicon-download-alt text-success"></span> Export to CSV</li>
+                    <li><span class="glyphicon glyphicon-print text-info"></span> Print-friendly format</li>
+                </ul>
+                <div class="text-center" style="margin-top: 20px;">
+                    @Html.ActionLink("View Portfolio Report", "Portfolio", null, new { @class = "btn btn-primary btn-lg" })
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-info-sign"></span> Report Information
+                </h3>
+            </div>
+            <div class="panel-body">
+                <h4>About Reports</h4>
+                <p>
+                    The reporting system provides real-time analytics based on loan application data 
+                    stored in the database. All reports are generated using stored procedures for 
+                    optimal performance.
+                </p>
+
+                <h4>Data Sources</h4>
+                <ul>
+                    <li><strong>Loan Applications:</strong> All submitted applications</li>
+                    <li><strong>Loan Decisions:</strong> Approval and rejection data</li>
+                    <li><strong>Risk Scores:</strong> Credit evaluation results</li>
+                    <li><strong>Interest Rates:</strong> Applied rates by loan type</li>
+                </ul>
+
+                <h4>Report Filters</h4>
+                <p>
+                    Use date range filters to analyze specific time periods. Filter by loan type 
+                    to focus on Personal, Auto, Mortgage, or Business loans.
+                </p>
+
+                <h4>Export Options</h4>
+                <p>
+                    All reports can be exported to CSV format for further analysis in spreadsheet 
+                    applications like Microsoft Excel.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-question-sign"></span> Quick Help
+                </h3>
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h4><span class="glyphicon glyphicon-calendar text-primary"></span> Date Filters</h4>
+                        <p>
+                            Select start and end dates to analyze loans within a specific period. 
+                            Leave blank to include all loans.
+                        </p>
+                    </div>
+                    <div class="col-md-4">
+                        <h4><span class="glyphicon glyphicon-tag text-success"></span> Loan Type Filter</h4>
+                        <p>
+                            Choose a specific loan type to focus your analysis, or select "All Loan Types" 
+                            for a complete portfolio view.
+                        </p>
+                    </div>
+                    <div class="col-md-4">
+                        <h4><span class="glyphicon glyphicon-download text-warning"></span> CSV Export</h4>
+                        <p>
+                            Click the "Export to CSV" button to download report data. The CSV file 
+                            includes all summary, breakdown, and distribution data.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="alert alert-info" role="alert">
+            <span class="glyphicon glyphicon-info-sign"></span>
+            <strong>Note:</strong> Reports are generated in real-time based on current database data. 
+            For best performance, use date range filters when analyzing large datasets.
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // Add hover effects to panels
+            $('.panel').hover(
+                function () {
+                    $(this).addClass('panel-hover');
+                },
+                function () {
+                    $(this).removeClass('panel-hover');
+                }
+            );
+        });
+    </script>
+}
+
+@section Styles {
+    <style type="text/css">
+        .jumbotron {
+            background-color: #f8f8f8;
+            border: 1px solid #e7e7e7;
+            padding: 30px 40px;
+            margin-bottom: 30px;
+        }
+
+        .jumbotron h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .panel-hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .panel-body ul {
+            margin-bottom: 15px;
+        }
+
+        .panel-body ul li {
+            margin-bottom: 8px;
+        }
+
+        .panel-body h4 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .panel-body h4:first-child {
+            margin-top: 0;
+        }
+
+        .glyphicon {
+            margin-right: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .jumbotron {
+                padding: 20px;
+            }
+
+            .jumbotron h3 {
+                font-size: 24px;
+            }
+
+            .jumbotron .lead {
+                font-size: 18px;
+            }
+        }
+    </style>
+}

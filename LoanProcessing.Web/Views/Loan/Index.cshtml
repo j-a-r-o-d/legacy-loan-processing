@@ -1,0 +1,231 @@
+@model IEnumerable<LoanProcessing.Web.Models.LoanApplication>
+
+@{
+    ViewBag.Title = "Loan Applications";
+}
+
+<h2>Loan Applications</h2>
+
+<div class="row">
+    <div class="col-md-12">
+        <p>
+            @Html.ActionLink("New Loan Application", "Apply", null, new { @class = "btn btn-primary" })
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Filter Applications</h3>
+            </div>
+            <div class="panel-body">
+                <form method="get" class="form-inline">
+                    <div class="form-group">
+                        <label for="status">Status:</label>
+                        <select name="status" id="status" class="form-control">
+                            <option value="">All</option>
+                            <option value="Pending" @(ViewBag.StatusFilter == "Pending" ? "selected" : "")>Pending</option>
+                            <option value="UnderReview" @(ViewBag.StatusFilter == "UnderReview" ? "selected" : "")>Under Review</option>
+                            <option value="Approved" @(ViewBag.StatusFilter == "Approved" ? "selected" : "")>Approved</option>
+                            <option value="Rejected" @(ViewBag.StatusFilter == "Rejected" ? "selected" : "")>Rejected</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="loanType">Loan Type:</label>
+                        <select name="loanType" id="loanType" class="form-control">
+                            <option value="">All</option>
+                            <option value="Personal" @(ViewBag.LoanTypeFilter == "Personal" ? "selected" : "")>Personal</option>
+                            <option value="Auto" @(ViewBag.LoanTypeFilter == "Auto" ? "selected" : "")>Auto</option>
+                            <option value="Mortgage" @(ViewBag.LoanTypeFilter == "Mortgage" ? "selected" : "")>Mortgage</option>
+                            <option value="Business" @(ViewBag.LoanTypeFilter == "Business" ? "selected" : "")>Business</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-default">
+                        <span class="glyphicon glyphicon-filter"></span> Filter
+                    </button>
+                    @if (!string.IsNullOrEmpty(ViewBag.StatusFilter) || !string.IsNullOrEmpty(ViewBag.LoanTypeFilter))
+                    {
+                        @Html.ActionLink("Clear", "Index", null, new { @class = "btn btn-link" })
+                    }
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover" id="applicationsTable">
+            <thead>
+                <tr>
+                    <th>
+                        <a href="#" class="sort-link" data-sort="ApplicationNumber">
+                            Application #
+                            <span class="glyphicon glyphicon-sort"></span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="#" class="sort-link" data-sort="ApplicationDate">
+                            Date
+                            <span class="glyphicon glyphicon-sort"></span>
+                        </a>
+                    </th>
+                    <th>Customer</th>
+                    <th>
+                        <a href="#" class="sort-link" data-sort="LoanType">
+                            Loan Type
+                            <span class="glyphicon glyphicon-sort"></span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="#" class="sort-link" data-sort="RequestedAmount">
+                            Requested Amount
+                            <span class="glyphicon glyphicon-sort"></span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="#" class="sort-link" data-sort="TermMonths">
+                            Term (Months)
+                            <span class="glyphicon glyphicon-sort"></span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="#" class="sort-link" data-sort="Status">
+                            Status
+                            <span class="glyphicon glyphicon-sort"></span>
+                        </a>
+                    </th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var application in Model)
+                {
+                    <tr>
+                        <td>@application.ApplicationNumber</td>
+                        <td>@application.ApplicationDate.ToString("MM/dd/yyyy")</td>
+                        <td>
+                            @if (application.Customer != null)
+                            {
+                                @Html.ActionLink(application.Customer.FirstName + " " + application.Customer.LastName, "Details", "Customer", new { id = application.CustomerId }, null)
+                            }
+                            else
+                            {
+                                <text>Customer ID: @application.CustomerId</text>
+                            }
+                        </td>
+                        <td>@application.LoanType</td>
+                        <td>@application.RequestedAmount.ToString("C")</td>
+                        <td>@application.TermMonths</td>
+                        <td>
+                            @if (application.Status == "Approved")
+                            {
+                                <span class="label label-success">@application.Status</span>
+                            }
+                            else if (application.Status == "Rejected")
+                            {
+                                <span class="label label-danger">@application.Status</span>
+                            }
+                            else if (application.Status == "UnderReview")
+                            {
+                                <span class="label label-warning">Under Review</span>
+                            }
+                            else
+                            {
+                                <span class="label label-info">@application.Status</span>
+                            }
+                        </td>
+                        <td>
+                            @Html.ActionLink("Details", "Details", new { id = application.ApplicationId }, new { @class = "btn btn-sm btn-info" })
+                            @if (application.Status == "Pending" || application.Status == "UnderReview")
+                            {
+                                @Html.ActionLink("Evaluate", "Evaluate", new { id = application.ApplicationId }, new { @class = "btn btn-sm btn-warning" })
+                                @Html.ActionLink("Decide", "Decide", new { id = application.ApplicationId }, new { @class = "btn btn-sm btn-primary" })
+                            }
+                            @if (application.Status == "Approved")
+                            {
+                                @Html.ActionLink("Schedule", "Schedule", new { id = application.ApplicationId }, new { @class = "btn btn-sm btn-success" })
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <strong>No loan applications found.</strong>
+        @if (!string.IsNullOrEmpty(ViewBag.StatusFilter) || !string.IsNullOrEmpty(ViewBag.LoanTypeFilter))
+        {
+            <text>Try a different filter or </text>@Html.ActionLink("view all applications", "Index")<text>.</text>
+        }
+        else
+        {
+            <text>Click "New Loan Application" to submit your first application.</text>
+        }
+    </div>
+}
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            // Simple client-side sorting
+            var sortDirection = {};
+
+            $('.sort-link').click(function (e) {
+                e.preventDefault();
+                var sortField = $(this).data('sort');
+                var $table = $('#applicationsTable');
+                var $tbody = $table.find('tbody');
+                var $rows = $tbody.find('tr').toArray();
+
+                // Toggle sort direction
+                sortDirection[sortField] = sortDirection[sortField] === 'asc' ? 'desc' : 'asc';
+
+                // Update sort icons
+                $('.sort-link .glyphicon').removeClass('glyphicon-sort-by-attributes glyphicon-sort-by-attributes-alt').addClass('glyphicon-sort');
+                if (sortDirection[sortField] === 'asc') {
+                    $(this).find('.glyphicon').removeClass('glyphicon-sort').addClass('glyphicon-sort-by-attributes');
+                } else {
+                    $(this).find('.glyphicon').removeClass('glyphicon-sort').addClass('glyphicon-sort-by-attributes-alt');
+                }
+
+                // Sort rows
+                $rows.sort(function (a, b) {
+                    var aValue, bValue;
+                    var columnIndex = $('.sort-link').index($(e.target).closest('.sort-link'));
+
+                    if (sortField === 'RequestedAmount') {
+                        aValue = parseFloat($(a).find('td').eq(4).text().replace(/[$,]/g, ''));
+                        bValue = parseFloat($(b).find('td').eq(4).text().replace(/[$,]/g, ''));
+                    } else if (sortField === 'TermMonths') {
+                        aValue = parseInt($(a).find('td').eq(5).text().trim());
+                        bValue = parseInt($(b).find('td').eq(5).text().trim());
+                    } else if (sortField === 'ApplicationDate') {
+                        aValue = new Date($(a).find('td').eq(1).text().trim());
+                        bValue = new Date($(b).find('td').eq(1).text().trim());
+                    } else {
+                        aValue = $(a).find('td').eq(columnIndex).text().trim().toLowerCase();
+                        bValue = $(b).find('td').eq(columnIndex).text().trim().toLowerCase();
+                    }
+
+                    if (sortDirection[sortField] === 'asc') {
+                        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+                    } else {
+                        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+                    }
+                });
+
+                // Reattach sorted rows
+                $.each($rows, function (index, row) {
+                    $tbody.append(row);
+                });
+            });
+        });
+    </script>
+}

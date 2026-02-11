@@ -1,0 +1,215 @@
+@model LoanProcessing.Web.Models.LoanDecision
+
+@{
+    ViewBag.Title = "Credit Evaluation Results";
+    var application = ViewBag.Application as LoanProcessing.Web.Models.LoanApplication;
+}
+
+<h2>Credit Evaluation Results</h2>
+
+@if (application != null)
+{
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Application Information</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="dl-horizontal">
+                                <dt>Application #:</dt>
+                                <dd>@application.ApplicationNumber</dd>
+
+                                <dt>Customer:</dt>
+                                <dd>
+                                    @if (application.Customer != null)
+                                    {
+                                        @Html.ActionLink(application.Customer.FirstName + " " + application.Customer.LastName, "Details", "Customer", new { id = application.CustomerId }, null)
+                                    }
+                                    else
+                                    {
+                                        <text>Customer ID: @application.CustomerId</text>
+                                    }
+                                </dd>
+
+                                <dt>Loan Type:</dt>
+                                <dd>@application.LoanType</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="dl-horizontal">
+                                <dt>Requested Amount:</dt>
+                                <dd>@application.RequestedAmount.ToString("C")</dd>
+
+                                <dt>Term:</dt>
+                                <dd>@application.TermMonths months</dd>
+
+                                <dt>Status:</dt>
+                                <dd>
+                                    <span class="label label-warning">@application.Status</span>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel @(Model.RiskScore <= 30 ? "panel-success" : Model.RiskScore <= 50 ? "panel-warning" : "panel-danger")">
+            <div class="panel-heading">
+                <h3 class="panel-title">Credit Evaluation Summary</h3>
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="dl-horizontal">
+                            <dt>Risk Score:</dt>
+                            <dd>
+                                <h3 style="margin-top: 0;">
+                                    <span class="label @(Model.RiskScore <= 30 ? "label-success" : Model.RiskScore <= 50 ? "label-warning" : "label-danger")">
+                                        @Model.RiskScore / 100
+                                    </span>
+                                </h3>
+                                <p class="help-block">
+                                    <small>
+                                        @if (Model.RiskScore <= 30)
+                                        {
+                                            <text>Low Risk - Excellent creditworthiness</text>
+                                        }
+                                        else if (Model.RiskScore <= 50)
+                                        {
+                                            <text>Medium Risk - Acceptable creditworthiness</text>
+                                        }
+                                        else
+                                        {
+                                            <text>High Risk - Poor creditworthiness</text>
+                                        }
+                                    </small>
+                                </p>
+                            </dd>
+
+                            <dt>Debt-to-Income Ratio:</dt>
+                            <dd>
+                                <h4 style="margin-top: 0;">
+                                    <span class="label @(Model.DebtToIncomeRatio <= 35 ? "label-success" : Model.DebtToIncomeRatio <= 43 ? "label-warning" : "label-danger")">
+                                        @Model.DebtToIncomeRatio.Value.ToString("0.00")%
+                                    </span>
+                                </h4>
+                                <p class="help-block">
+                                    <small>
+                                        @if (Model.DebtToIncomeRatio <= 35)
+                                        {
+                                            <text>Excellent - Well within acceptable limits</text>
+                                        }
+                                        else if (Model.DebtToIncomeRatio <= 43)
+                                        {
+                                            <text>Acceptable - Within standard limits</text>
+                                        }
+                                        else
+                                        {
+                                            <text>High - Exceeds recommended limits</text>
+                                        }
+                                    </small>
+                                </p>
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="dl-horizontal">
+                            @if (application != null && application.Customer != null)
+                            {
+                                <dt>Credit Score:</dt>
+                                <dd>
+                                    <span class="label @(application.Customer.CreditScore >= 700 ? "label-success" : application.Customer.CreditScore >= 650 ? "label-warning" : "label-danger")">
+                                        @application.Customer.CreditScore
+                                    </span>
+                                </dd>
+                            }
+
+                            <dt>Interest Rate:</dt>
+                            <dd>
+                                <h4 style="margin-top: 0;">@Model.InterestRate.Value.ToString("0.00")%</h4>
+                            </dd>
+
+                            <dt>Recommendation:</dt>
+                            <dd>
+                                @{
+                                    string recommendation = "";
+                                    string recommendationClass = "";
+                                    if (Model.RiskScore <= 30 && Model.DebtToIncomeRatio <= 35)
+                                    {
+                                        recommendation = "Recommended for Approval";
+                                        recommendationClass = "label-success";
+                                    }
+                                    else if (Model.RiskScore <= 50 && Model.DebtToIncomeRatio <= 43)
+                                    {
+                                        recommendation = "Manual Review Required";
+                                        recommendationClass = "label-warning";
+                                    }
+                                    else
+                                    {
+                                        recommendation = "High Risk - Recommend Rejection";
+                                        recommendationClass = "label-danger";
+                                    }
+                                }
+                                <h4 style="margin-top: 0;">
+                                    <span class="label @recommendationClass">
+                                        @recommendation
+                                    </span>
+                                </h4>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">Risk Score Breakdown</h3>
+            </div>
+            <div class="panel-body">
+                <h4>Risk Score Components</h4>
+                <p>The risk score is calculated based on the following factors:</p>
+                <ul>
+                    <li><strong>Credit Score Component:</strong> Based on applicant's credit score (300-850 range)</li>
+                    <li><strong>Debt-to-Income Component:</strong> Based on total debt obligations relative to annual income</li>
+                </ul>
+
+                <h4>Risk Score Ranges</h4>
+                <ul>
+                    <li><span class="label label-success">0-30</span> Low Risk - Recommended for approval</li>
+                    <li><span class="label label-warning">31-50</span> Medium Risk - Manual review required</li>
+                    <li><span class="label label-danger">51-100</span> High Risk - Recommend rejection</li>
+                </ul>
+
+                <h4>Debt-to-Income Ratio Guidelines</h4>
+                <ul>
+                    <li><span class="label label-success">≤ 35%</span> Excellent - Well within acceptable limits</li>
+                    <li><span class="label label-warning">36-43%</span> Acceptable - Within standard limits</li>
+                    <li><span class="label label-danger">> 43%</span> High - Exceeds recommended limits</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <p>
+            @Html.ActionLink("Back to Application", "Details", new { id = Model.ApplicationId }, new { @class = "btn btn-default" })
+            @Html.ActionLink("Make Decision", "Decide", new { id = Model.ApplicationId }, new { @class = "btn btn-primary" })
+            @Html.ActionLink("Back to List", "Index", null, new { @class = "btn btn-default" })
+        </p>
+    </div>
+</div>

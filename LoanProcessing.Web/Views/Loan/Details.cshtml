@@ -1,0 +1,184 @@
+@model LoanProcessing.Web.Models.LoanApplication
+
+@{
+    ViewBag.Title = "Loan Application Details";
+}
+
+<h2>Loan Application Details</h2>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">Application #@Model.ApplicationNumber</h3>
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="dl-horizontal">
+                            <dt>Application ID:</dt>
+                            <dd>@Model.ApplicationId</dd>
+
+                            <dt>Application Number:</dt>
+                            <dd>@Model.ApplicationNumber</dd>
+
+                            <dt>Application Date:</dt>
+                            <dd>@Model.ApplicationDate.ToString("MM/dd/yyyy hh:mm tt")</dd>
+
+                            <dt>Customer:</dt>
+                            <dd>
+                                @if (Model.Customer != null)
+                                {
+                                    @Html.ActionLink(Model.Customer.FirstName + " " + Model.Customer.LastName, "Details", "Customer", new { id = Model.CustomerId }, null)
+                                }
+                                else
+                                {
+                                    <text>Customer ID: @Model.CustomerId</text>
+                                }
+                            </dd>
+
+                            <dt>Status:</dt>
+                            <dd>
+                                @if (Model.Status == "Approved")
+                                {
+                                    <span class="label label-success">@Model.Status</span>
+                                }
+                                else if (Model.Status == "Rejected")
+                                {
+                                    <span class="label label-danger">@Model.Status</span>
+                                }
+                                else if (Model.Status == "UnderReview")
+                                {
+                                    <span class="label label-warning">Under Review</span>
+                                }
+                                else
+                                {
+                                    <span class="label label-info">@Model.Status</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="dl-horizontal">
+                            <dt>Loan Type:</dt>
+                            <dd>@Model.LoanType</dd>
+
+                            <dt>Requested Amount:</dt>
+                            <dd>@Model.RequestedAmount.ToString("C")</dd>
+
+                            <dt>Term:</dt>
+                            <dd>@Model.TermMonths months</dd>
+
+                            @if (Model.InterestRate.HasValue)
+                            {
+                                <dt>Interest Rate:</dt>
+                                <dd>@Model.InterestRate.Value.ToString("0.00")%</dd>
+                            }
+
+                            @if (Model.ApprovedAmount.HasValue)
+                            {
+                                <dt>Approved Amount:</dt>
+                                <dd>@Model.ApprovedAmount.Value.ToString("C")</dd>
+                            }
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <dl class="dl-horizontal">
+                            <dt>Purpose:</dt>
+                            <dd>@Model.Purpose</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Customer != null)
+{
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Customer Information</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="dl-horizontal">
+                                <dt>Name:</dt>
+                                <dd>@Model.Customer.FirstName @Model.Customer.LastName</dd>
+
+                                <dt>Email:</dt>
+                                <dd>@Model.Customer.Email</dd>
+
+                                <dt>Phone:</dt>
+                                <dd>@Model.Customer.Phone</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="dl-horizontal">
+                                <dt>Credit Score:</dt>
+                                <dd>
+                                    <span class="label @(Model.Customer.CreditScore >= 700 ? "label-success" : Model.Customer.CreditScore >= 650 ? "label-warning" : "label-danger")">
+                                        @Model.Customer.CreditScore
+                                    </span>
+                                </dd>
+
+                                <dt>Annual Income:</dt>
+                                <dd>@Model.Customer.AnnualIncome.ToString("C")</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ViewBag.PaymentSchedule != null)
+{
+    var schedule = ViewBag.PaymentSchedule as IEnumerable<LoanProcessing.Web.Models.PaymentSchedule>;
+    if (schedule != null && schedule.Any())
+    {
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-success">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Payment Schedule Summary</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p>
+                            <strong>Total Payments:</strong> @schedule.Count()<br />
+                            <strong>Total Interest:</strong> @schedule.Sum(s => s.InterestAmount).ToString("C")<br />
+                            <strong>Total Amount:</strong> @schedule.Sum(s => s.PaymentAmount).ToString("C")
+                        </p>
+                        <p>
+                            @Html.ActionLink("View Full Payment Schedule", "Schedule", new { id = Model.ApplicationId }, new { @class = "btn btn-success" })
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <p>
+            @Html.ActionLink("Back to List", "Index", null, new { @class = "btn btn-default" })
+            @if (Model.Status == "Pending" || Model.Status == "UnderReview")
+            {
+                @Html.ActionLink("Evaluate Credit", "Evaluate", new { id = Model.ApplicationId }, new { @class = "btn btn-warning" })
+                @Html.ActionLink("Make Decision", "Decide", new { id = Model.ApplicationId }, new { @class = "btn btn-primary" })
+            }
+            @if (Model.Status == "Approved")
+            {
+                @Html.ActionLink("View Payment Schedule", "Schedule", new { id = Model.ApplicationId }, new { @class = "btn btn-success" })
+            }
+        </p>
+    </div>
+</div>

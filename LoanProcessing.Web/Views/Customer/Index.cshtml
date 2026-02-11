@@ -1,0 +1,180 @@
+@model IEnumerable<LoanProcessing.Web.Models.Customer>
+
+@{
+    ViewBag.Title = "Customers";
+}
+
+<h2>Customers</h2>
+
+<div class="row">
+    <div class="col-md-12">
+        <p>
+            @Html.ActionLink("Create New Customer", "Create", null, new { @class = "btn btn-primary" })
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Search Customers</h3>
+            </div>
+            <div class="panel-body">
+                @using (Html.BeginForm("Search", "Customer", FormMethod.Get, new { @class = "form-inline" }))
+                {
+                    <div class="form-group">
+                        <label for="searchTerm">Search by Name, ID, or SSN:</label>
+                        <input type="text" name="searchTerm" id="searchTerm" class="form-control" value="@ViewBag.SearchTerm" placeholder="Enter search term" style="width: 300px;" />
+                    </div>
+                    <button type="submit" class="btn btn-default">
+                        <span class="glyphicon glyphicon-search"></span> Search
+                    </button>
+                    if (!string.IsNullOrEmpty(ViewBag.SearchTerm))
+                    {
+                        @Html.ActionLink("Clear", "Index", null, new { @class = "btn btn-link" })
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover" id="customersTable">
+            <thead>
+                <tr>
+                    <th>
+                        <a href="#" class="sort-link" data-sort="CustomerId">
+                            Customer ID
+                            <span class="glyphicon glyphicon-sort"></span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="#" class="sort-link" data-sort="FirstName">
+                            First Name
+                            <span class="glyphicon glyphicon-sort"></span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="#" class="sort-link" data-sort="LastName">
+                            Last Name
+                            <span class="glyphicon glyphicon-sort"></span>
+                        </a>
+                    </th>
+                    <th>SSN</th>
+                    <th>
+                        <a href="#" class="sort-link" data-sort="CreditScore">
+                            Credit Score
+                            <span class="glyphicon glyphicon-sort"></span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="#" class="sort-link" data-sort="AnnualIncome">
+                            Annual Income
+                            <span class="glyphicon glyphicon-sort"></span>
+                        </a>
+                    </th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var customer in Model)
+                {
+                    <tr>
+                        <td>@customer.CustomerId</td>
+                        <td>@customer.FirstName</td>
+                        <td>@customer.LastName</td>
+                        <td>@customer.SSN</td>
+                        <td>
+                            <span class="label @(customer.CreditScore >= 700 ? "label-success" : customer.CreditScore >= 650 ? "label-warning" : "label-danger")">
+                                @customer.CreditScore
+                            </span>
+                        </td>
+                        <td>@customer.AnnualIncome.ToString("C")</td>
+                        <td>@customer.Email</td>
+                        <td>@customer.Phone</td>
+                        <td>
+                            @Html.ActionLink("Details", "Details", new { id = customer.CustomerId }, new { @class = "btn btn-sm btn-info" })
+                            @Html.ActionLink("Edit", "Edit", new { id = customer.CustomerId }, new { @class = "btn btn-sm btn-default" })
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <strong>No customers found.</strong>
+        @if (!string.IsNullOrEmpty(ViewBag.SearchTerm))
+        {
+            <text>Try a different search term or </text>@Html.ActionLink("view all customers", "Index")<text>.</text>
+        }
+        else
+        {
+            <text>Click "Create New Customer" to add your first customer.</text>
+        }
+    </div>
+}
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            // Simple client-side sorting
+            var sortDirection = {};
+
+            $('.sort-link').click(function (e) {
+                e.preventDefault();
+                var sortField = $(this).data('sort');
+                var $table = $('#customersTable');
+                var $tbody = $table.find('tbody');
+                var $rows = $tbody.find('tr').toArray();
+
+                // Toggle sort direction
+                sortDirection[sortField] = sortDirection[sortField] === 'asc' ? 'desc' : 'asc';
+
+                // Update sort icons
+                $('.sort-link .glyphicon').removeClass('glyphicon-sort-by-attributes glyphicon-sort-by-attributes-alt').addClass('glyphicon-sort');
+                if (sortDirection[sortField] === 'asc') {
+                    $(this).find('.glyphicon').removeClass('glyphicon-sort').addClass('glyphicon-sort-by-attributes');
+                } else {
+                    $(this).find('.glyphicon').removeClass('glyphicon-sort').addClass('glyphicon-sort-by-attributes-alt');
+                }
+
+                // Sort rows
+                $rows.sort(function (a, b) {
+                    var aValue, bValue;
+                    var columnIndex = $(a).find('td').index($(a).find('td').eq($('.sort-link').index($(e.target).closest('.sort-link'))));
+
+                    if (sortField === 'CustomerId' || sortField === 'CreditScore') {
+                        aValue = parseInt($(a).find('td').eq(columnIndex).text().trim());
+                        bValue = parseInt($(b).find('td').eq(columnIndex).text().trim());
+                    } else if (sortField === 'AnnualIncome') {
+                        aValue = parseFloat($(a).find('td').eq(columnIndex).text().replace(/[$,]/g, ''));
+                        bValue = parseFloat($(b).find('td').eq(columnIndex).text().replace(/[$,]/g, ''));
+                    } else {
+                        aValue = $(a).find('td').eq(columnIndex).text().trim().toLowerCase();
+                        bValue = $(b).find('td').eq(columnIndex).text().trim().toLowerCase();
+                    }
+
+                    if (sortDirection[sortField] === 'asc') {
+                        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+                    } else {
+                        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+                    }
+                });
+
+                // Reattach sorted rows
+                $.each($rows, function (index, row) {
+                    $tbody.append(row);
+                });
+            });
+        });
+    </script>
+}

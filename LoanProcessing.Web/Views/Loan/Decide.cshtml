@@ -1,0 +1,289 @@
+@model LoanProcessing.Web.Controllers.LoanDecisionViewModel
+
+@{
+    ViewBag.Title = "Make Loan Decision";
+    var application = ViewBag.Application as LoanProcessing.Web.Models.LoanApplication;
+}
+
+<h2>Make Loan Decision</h2>
+
+@if (application != null)
+{
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Application Summary</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="dl-horizontal">
+                                <dt>Application #:</dt>
+                                <dd>@application.ApplicationNumber</dd>
+
+                                <dt>Customer:</dt>
+                                <dd>
+                                    @if (application.Customer != null)
+                                    {
+                                        @Html.ActionLink(application.Customer.FirstName + " " + application.Customer.LastName, "Details", "Customer", new { id = application.CustomerId }, null)
+                                        <br />
+                                        <small>
+                                            Credit Score: 
+                                            <span class="label @(application.Customer.CreditScore >= 700 ? "label-success" : application.Customer.CreditScore >= 650 ? "label-warning" : "label-danger")">
+                                                @application.Customer.CreditScore
+                                            </span>
+                                        </small>
+                                    }
+                                    else
+                                    {
+                                        <text>Customer ID: @application.CustomerId</text>
+                                    }
+                                </dd>
+
+                                <dt>Loan Type:</dt>
+                                <dd>@application.LoanType</dd>
+
+                                <dt>Application Date:</dt>
+                                <dd>@application.ApplicationDate.ToString("MM/dd/yyyy")</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="dl-horizontal">
+                                <dt>Requested Amount:</dt>
+                                <dd>@application.RequestedAmount.ToString("C")</dd>
+
+                                <dt>Term:</dt>
+                                <dd>@application.TermMonths months</dd>
+
+                                @if (application.InterestRate.HasValue)
+                                {
+                                    <dt>Interest Rate:</dt>
+                                    <dd>@application.InterestRate.Value.ToString("0.00")%</dd>
+                                }
+
+                                <dt>Status:</dt>
+                                <dd>
+                                    <span class="label label-warning">@application.Status</span>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(application.Purpose))
+                    {
+                        <div class="row">
+                            <div class="col-md-12">
+                                <dl class="dl-horizontal">
+                                    <dt>Purpose:</dt>
+                                    <dd>@application.Purpose</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">Decision Form</h3>
+            </div>
+            <div class="panel-body">
+                @using (Html.BeginForm("Decide", "Loan", FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+                    @Html.HiddenFor(model => model.ApplicationId)
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Decision, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.DropDownListFor(model => model.Decision, ViewBag.Decisions as SelectList, "-- Select Decision --", new { @class = "form-control", id = "decisionSelect" })
+                            @Html.ValidationMessageFor(model => model.Decision, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="approvedAmountGroup">
+                        @Html.LabelFor(model => model.ApprovedAmount, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            <div class="input-group">
+                                <span class="input-group-addon">$</span>
+                                @Html.TextBoxFor(model => model.ApprovedAmount, new { @class = "form-control", type = "number", step = "0.01", min = "0.01" })
+                            </div>
+                            @Html.ValidationMessageFor(model => model.ApprovedAmount, "", new { @class = "text-danger" })
+                            <p class="help-block">
+                                <small>
+                                    Approved amount cannot exceed requested amount of @(application != null ? application.RequestedAmount.ToString("C") : "")
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.DecisionBy, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.TextBoxFor(model => model.DecisionBy, new { @class = "form-control", placeholder = "Enter your name" })
+                            @Html.ValidationMessageFor(model => model.DecisionBy, "", new { @class = "text-danger" })
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Comments, new { @class = "control-label col-md-3" })
+                        <div class="col-md-9">
+                            @Html.TextAreaFor(model => model.Comments, new { @class = "form-control", rows = "4", placeholder = "Enter comments (required for rejection)" })
+                            @Html.ValidationMessageFor(model => model.Comments, "", new { @class = "text-danger" })
+                            <p class="help-block" id="commentsHelp">
+                                <small>Comments are required when rejecting an application</small>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-md-offset-3 col-md-9">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="glyphicon glyphicon-ok"></span> Submit Decision
+                            </button>
+                            @Html.ActionLink("Cancel", "Details", new { id = Model.ApplicationId }, new { @class = "btn btn-default" })
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">Decision Guidelines</h3>
+            </div>
+            <div class="panel-body">
+                <h4>Approval Criteria</h4>
+                <ul>
+                    <li>Credit score ≥ 650</li>
+                    <li>Debt-to-income ratio ≤ 43%</li>
+                    <li>Risk score ≤ 50</li>
+                    <li>Stable income verification</li>
+                </ul>
+
+                <h4>Rejection Reasons</h4>
+                <ul>
+                    <li>Insufficient credit score</li>
+                    <li>High debt-to-income ratio</li>
+                    <li>Insufficient income</li>
+                    <li>Incomplete documentation</li>
+                    <li>High risk score</li>
+                </ul>
+
+                <div class="alert alert-warning">
+                    <strong>Note:</strong> Comments are required when rejecting an application to provide feedback to the applicant.
+                </div>
+            </div>
+        </div>
+
+        @if (application != null && application.Status == "UnderReview")
+        {
+            <div class="panel panel-warning">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Quick Actions</h3>
+                </div>
+                <div class="panel-body">
+                    <p>
+                        @Html.ActionLink("View Credit Evaluation", "Evaluate", new { id = application.ApplicationId }, new { @class = "btn btn-warning btn-block" })
+                    </p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        $(document).ready(function () {
+            var requestedAmount = @(application != null ? application.RequestedAmount : 0);
+
+            // Show/hide approved amount based on decision
+            function toggleApprovedAmount() {
+                var decision = $('#decisionSelect').val();
+                if (decision === 'Approved') {
+                    $('#approvedAmountGroup').show();
+                    $('#commentsHelp').html('<small>Optional comments for approval</small>');
+                } else if (decision === 'Rejected') {
+                    $('#approvedAmountGroup').hide();
+                    $('#commentsHelp').html('<small><strong class="text-danger">Comments are required when rejecting an application</strong></small>');
+                } else {
+                    $('#approvedAmountGroup').hide();
+                    $('#commentsHelp').html('<small>Comments are required when rejecting an application</small>');
+                }
+            }
+
+            // Initial state
+            toggleApprovedAmount();
+
+            // Handle decision change
+            $('#decisionSelect').change(function () {
+                toggleApprovedAmount();
+            });
+
+            // jQuery validation
+            $('form').validate({
+                rules: {
+                    Decision: {
+                        required: true
+                    },
+                    ApprovedAmount: {
+                        required: function() {
+                            return $('#decisionSelect').val() === 'Approved';
+                        },
+                        number: true,
+                        min: 0.01,
+                        max: requestedAmount
+                    },
+                    DecisionBy: {
+                        required: true,
+                        minlength: 2
+                    },
+                    Comments: {
+                        required: function() {
+                            return $('#decisionSelect').val() === 'Rejected';
+                        },
+                        minlength: 10
+                    }
+                },
+                messages: {
+                    Decision: {
+                        required: "Please select a decision"
+                    },
+                    ApprovedAmount: {
+                        required: "Approved amount is required for approval",
+                        number: "Please enter a valid number",
+                        min: "Approved amount must be greater than 0",
+                        max: "Approved amount cannot exceed requested amount of " + requestedAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+                    },
+                    DecisionBy: {
+                        required: "Please enter your name",
+                        minlength: "Name must be at least 2 characters"
+                    },
+                    Comments: {
+                        required: "Comments are required when rejecting an application",
+                        minlength: "Comments must be at least 10 characters"
+                    }
+                },
+                errorClass: "text-danger",
+                errorElement: "span",
+                highlight: function(element) {
+                    $(element).closest('.form-group').addClass('has-error');
+                },
+                unhighlight: function(element) {
+                    $(element).closest('.form-group').removeClass('has-error');
+                }
+            });
+        });
+    </script>
+}

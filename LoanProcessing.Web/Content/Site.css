@@ -1,0 +1,99 @@
+body {
+    padding-top: 50px;
+    padding-bottom: 20px;
+}
+
+/* Set padding to keep content from hitting the edges */
+.body-content {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* Override the default bootstrap behavior where horizontal description lists 
+   will truncate terms that are too long to fit in the left column 
+*/
+.dl-horizontal dt {
+    white-space: normal;
+}
+
+/* Set width on the form input elements since they're 100% wide by default */
+input,
+select,
+textarea {
+    max-width: 280px;
+}
+
+/* Custom styles for loan processing application */
+.table-actions {
+    white-space: nowrap;
+}
+
+.table-actions a {
+    margin-right: 5px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-pending {
+    background-color: #f0ad4e;
+    color: white;
+}
+
+.status-underreview {
+    background-color: #5bc0de;
+    color: white;
+}
+
+.status-approved {
+    background-color: #5cb85c;
+    color: white;
+}
+
+.status-rejected {
+    background-color: #d9534f;
+    color: white;
+}
+
+.form-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-section h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #337ab7;
+}
+
+.validation-summary-errors {
+    color: #a94442;
+    background-color: #f2dede;
+    border: 1px solid #ebccd1;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.validation-summary-errors ul {
+    margin: 0;
+    padding: 0 0 0 20px;
+}
+
+.field-validation-error {
+    color: #a94442;
+    font-size: 12px;
+}
+
+.input-validation-error {
+    border-color: #a94442;
+}

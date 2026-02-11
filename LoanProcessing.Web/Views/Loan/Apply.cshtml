@@ -1,0 +1,677 @@
+@model LoanProcessing.Web.Models.LoanApplication
+
+@{
+    ViewBag.Title = "Apply for Loan";
+}
+
+<style>
+    .required:after {
+        content: " *";
+        color: red;
+    }
+</style>
+
+<h2>Apply for Loan</h2>
+
+@if (ViewBag.CustomerName != null)
+{
+    <div class="alert alert-info">
+        <strong>Applicant:</strong> @ViewBag.CustomerName
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">Loan Application Form</h3>
+            </div>
+            <div class="panel-body">
+                @using (Html.BeginForm("Apply", "Loan", FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.ValidationSummary(false, "", new { @class = "text-danger" })
+
+                    var isPreSelected = ViewBag.IsPreSelected != null && (bool)ViewBag.IsPreSelected;
+                    
+                    if (!isPreSelected)
+                    {
+                        <div class="form-group" id="customer-search-group">
+                            @Html.LabelFor(model => model.CustomerId, "Customer", new { @class = "control-label col-md-3 required" })
+                            <div class="col-md-9">
+                                <input type="text" 
+                                       id="CustomerSearch" 
+                                       name="CustomerSearch" 
+                                       class="form-control" 
+                                       placeholder="Start typing customer name or ID..." 
+                                       autocomplete="off"
+                                       role="combobox"
+                                       aria-autocomplete="list"
+                                       aria-expanded="false"
+                                       aria-haspopup="listbox"
+                                       aria-controls="customer-autocomplete-results"
+                                       aria-describedby="customer-search-help customer-search-feedback"
+                                       aria-label="Search for customer by name, ID, or SSN" />
+                                @Html.HiddenFor(model => model.CustomerId, new { id = "CustomerId" })
+                                <div id="selected-customer-display" style="display: none; margin-top: 10px;">
+                                    <div class="alert alert-success" style="margin-bottom: 5px;">
+                                        <strong>Selected:</strong> <span id="selected-customer-name" aria-live="polite"></span>
+                                        <button type="button" class="close" id="clear-customer-selection" aria-label="Clear customer selection">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <span class="text-danger field-validation-error" id="customer-validation-message" style="display: none;" role="alert" aria-live="assertive"></span>
+                                <div id="customer-search-feedback" class="alert" style="display: none; margin-top: 10px; margin-bottom: 5px;" role="status" aria-live="polite"></div>
+                                <p class="help-block" id="customer-search-help"><small>Type at least 2 characters to search for customers by name, ID, or SSN. Use arrow keys to navigate results, Enter to select, Escape to close.</small></p>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        @Html.HiddenFor(model => model.CustomerId)
+                    }
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.LoanType, new { @class = "control-label col-md-3 required" })
+                        <div class="col-md-9">
+                            @Html.DropDownListFor(model => model.LoanType, ViewBag.LoanTypes as SelectList, "-- Select Loan Type --", new { @class = "form-control" })
+                            @Html.ValidationMessageFor(model => model.LoanType, "", new { @class = "text-danger" })
+                            <p class="help-block">
+                                <small>
+                                    <strong>Personal:</strong> Up to $50,000 | 
+                                    <strong>Auto:</strong> Up to $75,000 | 
+                                    <strong>Mortgage:</strong> Up to $500,000 | 
+                                    <strong>Business:</strong> Up to $250,000
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.RequestedAmount, new { @class = "control-label col-md-3 required" })
+                        <div class="col-md-9">
+                            <div class="input-group">
+                                <span class="input-group-addon">$</span>
+                                @Html.TextBoxFor(model => model.RequestedAmount, new { @class = "form-control", type = "number", step = "0.01", min = "0.01" })
+                            </div>
+                            @Html.ValidationMessageFor(model => model.RequestedAmount, "", new { @class = "text-danger" })
+                            <p class="help-block"><small>Enter the amount you wish to borrow</small></p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.TermMonths, new { @class = "control-label col-md-3 required" })
+                        <div class="col-md-9">
+                            <div class="input-group">
+                                @Html.TextBoxFor(model => model.TermMonths, new { @class = "form-control", type = "number", min = "12", max = "360" })
+                                <span class="input-group-addon">months</span>
+                            </div>
+                            @Html.ValidationMessageFor(model => model.TermMonths, "", new { @class = "text-danger" })
+                            <p class="help-block"><small>Loan term must be between 12 and 360 months</small></p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        @Html.LabelFor(model => model.Purpose, new { @class = "control-label col-md-3 required" })
+                        <div class="col-md-9">
+                            @Html.TextAreaFor(model => model.Purpose, new { @class = "form-control", rows = "4", maxlength = "500" })
+                            @Html.ValidationMessageFor(model => model.Purpose, "", new { @class = "text-danger" })
+                            <p class="help-block"><small>Please describe the purpose of this loan (max 500 characters)</small></p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="col-md-offset-3 col-md-9">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="glyphicon glyphicon-ok"></span> Submit Application
+                            </button>
+                            @Html.ActionLink("Cancel", "Index", null, new { @class = "btn btn-default" })
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">Loan Information</h3>
+            </div>
+            <div class="panel-body">
+                <h4>Loan Limits by Type</h4>
+                <ul>
+                    <li><strong>Personal Loan:</strong> Up to $50,000</li>
+                    <li><strong>Auto Loan:</strong> Up to $75,000</li>
+                    <li><strong>Mortgage:</strong> Up to $500,000</li>
+                    <li><strong>Business Loan:</strong> Up to $250,000</li>
+                </ul>
+
+                <h4>Term Requirements</h4>
+                <ul>
+                    <li>Minimum: 12 months (1 year)</li>
+                    <li>Maximum: 360 months (30 years)</li>
+                </ul>
+
+                <h4>Application Process</h4>
+                <ol>
+                    <li>Submit application</li>
+                    <li>Credit evaluation</li>
+                    <li>Underwriter review</li>
+                    <li>Decision (Approved/Rejected)</li>
+                    <li>Payment schedule generation</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    
+    <!-- jQuery UI for autocomplete -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    
+    <script>
+        $(document).ready(function () {
+            // Initialize customer autocomplete if search field exists
+            var $customerSearch = $('#CustomerSearch');
+            if ($customerSearch.length > 0) {
+                initializeCustomerAutocomplete();
+            }
+
+            // Loan amount limits by type
+            var loanLimits = {
+                'Personal': 50000,
+                'Auto': 75000,
+                'Mortgage': 500000,
+                'Business': 250000
+            };
+
+            // Add custom validation method for customer selection
+            // Ensures customer is selected from autocomplete before form submission
+            // Requirement 5.3: Display validation error if no customer selected
+            $.validator.addMethod("customerselected", function (value, element) {
+                // Check if CustomerId hidden field has a valid value
+                var customerId = parseInt($('#CustomerId').val());
+                return !isNaN(customerId) && customerId > 0;
+            }, "Please select a customer from the search results");
+
+            // Add custom validation method for loan amount based on type
+            $.validator.addMethod("loanamountlimit", function (value, element) {
+                var loanType = $('#LoanType').val();
+                if (!loanType) return true; // Let required validation handle empty type
+                
+                var amount = parseFloat(value);
+                var maxAmount = loanLimits[loanType];
+                
+                return amount > 0 && amount <= maxAmount;
+            }, function (params, element) {
+                var loanType = $('#LoanType').val();
+                var maxAmount = loanLimits[loanType];
+                return "Amount must be between $0.01 and $" + maxAmount.toLocaleString();
+            });
+
+            // Configure validation rules
+            $("form").validate({
+                rules: {
+                    CustomerId: {
+                        required: true,
+                        min: 1,
+                        customerselected: true  // Custom validation for autocomplete selection
+                    },
+                    LoanType: {
+                        required: true
+                    },
+                    RequestedAmount: {
+                        required: true,
+                        number: true,
+                        min: 0.01,
+                        loanamountlimit: true
+                    },
+                    TermMonths: {
+                        required: true,
+                        digits: true,
+                        range: [12, 360]
+                    },
+                    Purpose: {
+                        required: true,
+                        minlength: 10,
+                        maxlength: 500
+                    }
+                },
+                messages: {
+                    CustomerId: {
+                        required: "Please select a customer from the search results",
+                        min: "Please select a customer from the search results",
+                        customerselected: "Please select a customer from the search results"
+                    },
+                    LoanType: {
+                        required: "Please select a loan type"
+                    },
+                    RequestedAmount: {
+                        required: "Loan amount is required",
+                        number: "Please enter a valid number",
+                        min: "Loan amount must be greater than zero"
+                    },
+                    TermMonths: {
+                        required: "Loan term is required",
+                        digits: "Loan term must be a whole number",
+                        range: "Loan term must be between 12 and 360 months"
+                    },
+                    Purpose: {
+                        required: "Purpose is required",
+                        minlength: "Purpose must be at least 10 characters",
+                        maxlength: "Purpose cannot exceed 500 characters"
+                    }
+                },
+                errorClass: "text-danger field-validation-error",
+                errorElement: "span",
+                errorPlacement: function (error, element) {
+                    // Special handling for CustomerId validation message
+                    if (element.attr('id') === 'CustomerId') {
+                        // Place error in the dedicated validation message container
+                        $('#customer-validation-message').html(error.text()).show();
+                        // Also highlight the search group
+                        $('#customer-search-group').addClass('has-error');
+                    } else {
+                        // Default placement for other fields
+                        error.insertAfter(element);
+                    }
+                },
+                highlight: function (element) {
+                    $(element).closest('.form-group').addClass('has-error');
+                },
+                unhighlight: function (element) {
+                    $(element).closest('.form-group').removeClass('has-error');
+                    // Clear custom validation message for CustomerId
+                    if ($(element).attr('id') === 'CustomerId') {
+                        $('#customer-validation-message').hide();
+                    }
+                },
+                submitHandler: function (form) {
+                    // Final validation check before submission
+                    var customerId = parseInt($('#CustomerId').val());
+                    if (isNaN(customerId) || customerId <= 0) {
+                        $('#customer-validation-message')
+                            .text('Please select a customer from the search results')
+                            .show();
+                        $('#customer-search-group').addClass('has-error');
+                        $('#CustomerSearch').focus();
+                        return false;
+                    }
+                    form.submit();
+                }
+            });
+
+            // Update maximum amount display when loan type changes
+            $('#LoanType').on('change', function () {
+                var loanType = $(this).val();
+                var $amountGroup = $('#RequestedAmount').closest('.form-group');
+                var $helpBlock = $amountGroup.find('.help-block');
+                
+                if (loanType && loanLimits[loanType]) {
+                    var maxAmount = loanLimits[loanType];
+                    $helpBlock.html('<small><strong>Maximum for ' + loanType + ' loan:</strong> $' + maxAmount.toLocaleString() + '</small>');
+                    $helpBlock.removeClass('text-muted').addClass('text-info');
+                } else {
+                    $helpBlock.html('<small>Enter the amount you wish to borrow</small>');
+                    $helpBlock.removeClass('text-info').addClass('text-muted');
+                }
+                
+                // Revalidate amount when type changes
+                $('#RequestedAmount').valid();
+            });
+
+            // Real-time validation feedback for loan amount
+            $('#RequestedAmount').on('input', function () {
+                var amount = parseFloat($(this).val());
+                var loanType = $('#LoanType').val();
+                
+                if (loanType && !isNaN(amount) && amount > 0) {
+                    var maxAmount = loanLimits[loanType];
+                    var $helpBlock = $(this).closest('.form-group').find('.help-block');
+                    
+                    if (amount > maxAmount) {
+                        $helpBlock.html('<small><strong>Maximum for ' + loanType + ' loan:</strong> $' + maxAmount.toLocaleString() + ' <span class="text-danger">(Amount exceeds limit)</span></small>');
+                    } else {
+                        var percentage = ((amount / maxAmount) * 100).toFixed(1);
+                        $helpBlock.html('<small><strong>Maximum for ' + loanType + ' loan:</strong> $' + maxAmount.toLocaleString() + ' <span class="text-success">(' + percentage + '% of maximum)</span></small>');
+                    }
+                }
+            });
+
+            // Real-time validation feedback for term
+            $('#TermMonths').on('input', function () {
+                var term = parseInt($(this).val());
+                var $helpBlock = $(this).closest('.form-group').find('.help-block');
+                
+                if (!isNaN(term)) {
+                    if (term < 12) {
+                        $helpBlock.html('<small>Loan term must be between 12 and 360 months <span class="text-danger">(Too short)</span></small>');
+                    } else if (term > 360) {
+                        $helpBlock.html('<small>Loan term must be between 12 and 360 months <span class="text-danger">(Too long)</span></small>');
+                    } else {
+                        var years = (term / 12).toFixed(1);
+                        $helpBlock.html('<small>Loan term must be between 12 and 360 months <span class="text-success">(' + years + ' years)</span></small>');
+                    }
+                } else {
+                    $helpBlock.html('<small>Loan term must be between 12 and 360 months</small>');
+                }
+            });
+
+            // Character counter for purpose
+            $('#Purpose').on('input', function () {
+                var length = $(this).val().length;
+                var $helpBlock = $(this).closest('.form-group').find('.help-block');
+                var remaining = 500 - length;
+                
+                if (length < 10) {
+                    $helpBlock.html('<small>Please describe the purpose of this loan (max 500 characters) <span class="text-warning">' + length + '/500 - Need at least 10 characters</span></small>');
+                } else if (remaining < 50) {
+                    $helpBlock.html('<small>Please describe the purpose of this loan (max 500 characters) <span class="text-warning">' + length + '/500 - ' + remaining + ' characters remaining</span></small>');
+                } else {
+                    $helpBlock.html('<small>Please describe the purpose of this loan (max 500 characters) <span class="text-success">' + length + '/500 characters</span></small>');
+                }
+            });
+
+            // Trigger initial validation state
+            $('#LoanType').trigger('change');
+
+            /**
+             * Initialize jQuery UI autocomplete on customer search field
+             * Implements Requirements 1.2, 1.3, 1.4, 1.5, 3.2, 5.1, 5.2, 5.4
+             */
+            function initializeCustomerAutocomplete() {
+                var $customerSearch = $('#CustomerSearch');
+                var $customerId = $('#CustomerId');
+                var $selectedDisplay = $('#selected-customer-display');
+                var $selectedName = $('#selected-customer-name');
+                var $validationMessage = $('#customer-validation-message');
+                var $feedbackMessage = $('#customer-search-feedback');
+
+                $customerSearch.autocomplete({
+                    source: function (request, response) {
+                        // Clear any previous feedback messages
+                        $feedbackMessage.hide().removeClass('alert-danger alert-warning');
+                        
+                        // Show loading indicator
+                        $customerSearch.addClass('ui-autocomplete-loading');
+                        
+                        $.ajax({
+                            url: '@Url.Action("SearchCustomers", "Loan")',
+                            dataType: 'json',
+                            data: {
+                                term: request.term
+                            },
+                            success: function (data) {
+                                // Hide loading indicator
+                                $customerSearch.removeClass('ui-autocomplete-loading');
+                                
+                                if (data.length === 0) {
+                                    // Show "no results" message in dropdown
+                                    response([{
+                                        label: 'No customers found',
+                                        value: '',
+                                        noResults: true
+                                    }]);
+                                } else {
+                                    response(data);
+                                }
+                            },
+                            error: function (xhr, status, error) {
+                                // Hide loading indicator
+                                $customerSearch.removeClass('ui-autocomplete-loading');
+                                
+                                // Log error for debugging (Requirement 5.4)
+                                console.error('Autocomplete AJAX error:', {
+                                    status: status,
+                                    error: error,
+                                    xhr: xhr
+                                });
+                                
+                                // Show error message in dropdown
+                                response([{
+                                    label: 'Error searching customers. Please try again.',
+                                    value: '',
+                                    error: true
+                                }]);
+                                
+                                // Show persistent error message (Requirement 5.4)
+                                showFeedbackMessage('Unable to search customers. Please check your connection and try again.', 'error');
+                            }
+                        });
+                    },
+                    minLength: 2,           // Minimum 2 characters before search (Requirement 1.2)
+                    delay: 300,             // 300ms debounce delay (Requirement 3.2)
+                    
+                    // SELECT event handler - Requirement 1.4, 1.5
+                    select: function (event, ui) {
+                        // Don't select if it's a "no results" or error message
+                        if (ui.item.noResults || ui.item.error) {
+                            event.preventDefault();
+                            return false;
+                        }
+
+                        // Populate hidden customer ID field (Requirement 1.4)
+                        $customerId.val(ui.item.customerId);
+                        
+                        // Display selected customer name (Requirement 1.4)
+                        $selectedName.text(ui.item.label);
+                        $selectedDisplay.show();
+                        
+                        // Clear validation error and feedback messages (Requirement 5.3)
+                        $validationMessage.hide();
+                        $feedbackMessage.hide();
+                        $('#customer-search-group').removeClass('has-error');
+                        
+                        // Trigger validation to clear any error state
+                        $customerId.valid();
+                        
+                        // Set the display value
+                        $customerSearch.val(ui.item.value);
+                        
+                        // Update ARIA attributes (Requirement 6.5)
+                        $customerSearch.attr('aria-expanded', 'false');
+                        
+                        return false; // Prevent default behavior
+                    },
+                    
+                    // RESPONSE event handler - Requirement 5.1, 6.5
+                    response: function (event, ui) {
+                        // Check if no results were found
+                        if (ui.content.length === 1 && ui.content[0].noResults) {
+                            // Show "no results" feedback message (Requirement 5.1)
+                            showFeedbackMessage('No customers found matching your search. Try a different name, ID, or SSN.', 'warning');
+                            
+                            // Announce to screen readers (Requirement 6.5)
+                            announceToScreenReader('No customers found matching your search');
+                        } else if (ui.content.length === 1 && ui.content[0].error) {
+                            // Error message already shown in error handler
+                            announceToScreenReader('Error searching customers. Please try again.');
+                        } else if (ui.content.length > 0) {
+                            // Clear feedback message when results are found
+                            $feedbackMessage.hide();
+                            
+                            // Announce number of results to screen readers (Requirement 6.5)
+                            var resultCount = ui.content.length;
+                            var message = resultCount === 1 
+                                ? '1 customer found. Use arrow keys to navigate, Enter to select.' 
+                                : resultCount + ' customers found. Use arrow keys to navigate, Enter to select.';
+                            announceToScreenReader(message);
+                        }
+                    },
+                    
+                    focus: function (event, ui) {
+                        // Don't update input on focus if it's a message
+                        if (ui.item.noResults || ui.item.error) {
+                            event.preventDefault();
+                            return false;
+                        }
+                        return true;
+                    },
+                    
+                    open: function () {
+                        // Add custom styling to dropdown
+                        $(this).autocomplete('widget').addClass('customer-autocomplete-results');
+                        
+                        // Update ARIA attributes (Requirement 6.2, 6.3, 6.4)
+                        $customerSearch.attr('aria-expanded', 'true');
+                        
+                        // Set ARIA attributes on the dropdown list
+                        var $menu = $(this).autocomplete('widget');
+                        $menu.attr({
+                            'role': 'listbox',
+                            'id': 'customer-autocomplete-results'
+                        });
+                        
+                        // Set ARIA attributes on menu items
+                        $menu.find('.ui-menu-item').each(function(index) {
+                            $(this).attr({
+                                'role': 'option',
+                                'id': 'customer-option-' + index
+                            });
+                        });
+                    },
+                    
+                    close: function () {
+                        // Update ARIA attributes when dropdown closes (Requirement 6.4)
+                        $customerSearch.attr('aria-expanded', 'false');
+                    }
+                });
+
+                // Handle clearing the selection - Requirement 1.5
+                $('#clear-customer-selection').on('click', function () {
+                    clearCustomerSelection();
+                });
+
+                // Clear hidden field if user manually changes the search text - Requirement 1.5
+                $customerSearch.on('input', function () {
+                    if ($customerId.val()) {
+                        // User is typing after selecting - clear the selection
+                        clearCustomerSelection();
+                    }
+                });
+                
+                /**
+                 * Clear customer selection and reset form state
+                 * Implements Requirement 1.5
+                 */
+                function clearCustomerSelection() {
+                    $customerSearch.val('');
+                    $customerId.val('');
+                    $selectedDisplay.hide();
+                    $feedbackMessage.hide();
+                    $validationMessage.hide();
+                    $('#customer-search-group').removeClass('has-error');
+                    
+                    // Trigger validation to show error if form was previously validated
+                    if ($('form').data('validator')) {
+                        $customerId.valid();
+                    }
+                    
+                    $customerSearch.focus();
+                }
+                
+                /**
+                 * Show feedback message to user
+                 * @@param {string} message - The message to display
+                 * @@param {string} type - Message type: 'error', 'warning', 'info', 'success'
+                 */
+                function showFeedbackMessage(message, type) {
+                    var alertClass = 'alert-info';
+                    
+                    switch (type) {
+                        case 'error':
+                            alertClass = 'alert-danger';
+                            break;
+                        case 'warning':
+                            alertClass = 'alert-warning';
+                            break;
+                        case 'success':
+                            alertClass = 'alert-success';
+                            break;
+                        default:
+                            alertClass = 'alert-info';
+                    }
+                    
+                    $feedbackMessage
+                        .removeClass('alert-danger alert-warning alert-info alert-success')
+                        .addClass(alertClass)
+                        .text(message)
+                        .show();
+                }
+                
+                /**
+                 * Announce message to screen readers using ARIA live region
+                 * Implements Requirement 6.5: Announce number of results to screen readers
+                 * @@param {string} message - The message to announce
+                 */
+                function announceToScreenReader(message) {
+                    // Use the feedback message container as a live region
+                    // It already has role="status" and aria-live="polite"
+                    var $announcer = $feedbackMessage;
+                    
+                    // Temporarily show the message for screen readers
+                    // We'll hide it visually but keep it accessible
+                    $announcer
+                        .removeClass('alert-danger alert-warning alert-info alert-success')
+                        .addClass('sr-only')
+                        .text(message)
+                        .show();
+                    
+                    // Clear the announcement after a short delay
+                    setTimeout(function() {
+                        if ($announcer.hasClass('sr-only')) {
+                            $announcer.hide().removeClass('sr-only');
+                        }
+                    }, 1000);
+                }
+            }
+        });
+    </script>
+    
+    <style>
+        /* Loading indicator for autocomplete */
+        .ui-autocomplete-loading {
+            background: white url('data:image/gif;base64,R0lGODlhEAAQAPIAAP///wAAAMLCwkJCQgAAAGJiYoKCgpKSkiH/C05FVFNDQVBFMi4wAwEAAAAh/hpDcmVhdGVkIHdpdGggYWpheGxvYWQuaW5mbwAh+QQJCgAAACwAAAAAEAAQAAADMwi63P4wyklrE2MIOggZnAdOmGYJRbExwroUmcG2LmDEwnHQLVsYOd2mBzkYDAdKa+dIAAAh+QQJCgAAACwAAAAAEAAQAAADNAi63P5OjCEgG4QMu7DmikRxQlFUYDEZIGBMRVsaqHwctXXf7WEYB4Ag1xjihkMZsiUkKhIAIfkECQoAAAAsAAAAABAAEAAAAzYIujIjK8pByJDMlFYvBoVjHA70GU7xSUJhmKtwHPAKzLO9HMaoKwJZ7Rf8AYPDDzKpZBqfvwQAIfkECQoAAAAsAAAAABAAEAAAAzMIumIlK8oyhpHsnFZfhYumCYUhDAQxRIdhHBGqRoKw0R8DYlJd8z0fMDgsGo/IpHI5TAAAIfkECQoAAAAsAAAAABAAEAAAAzIIunInK0rnZBTwGPNMgQwmdsNgXGJUlIWEuR5oWUIpz8pAEAMe6TwfwyYsGo/IpFKSAAAh+QQJCgAAACwAAAAAEAAQAAADMwi6IMKQORfjdOe82p4wGccc4CEuQradylesojEMBgsUc2G7sDX3lQGBMLAJibufbSlKAAAh+QQJCgAAACwAAAAAEAAQAAADMgi63P7wCRHZnFVdmgHu2nFwlWCI3WGc3TSWhUFGxTAUkGCbtgENBMJAEJsxgMLWzpEAACH5BAkKAAAALAAAAAAQABAAAAMyCLrc/jDKSatlQtScKdceCAjDII7HcQ4EMTCpyrCuUBjCYRgHVtqlAiB1YhiCnlsRkAAAOwAAAAAAAAAAAA==') no-repeat right center;
+            background-size: 16px 16px;
+            padding-right: 25px;
+        }
+        
+        /* Style for autocomplete dropdown */
+        .customer-autocomplete-results {
+            max-height: 300px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1000;
+        }
+        
+        .customer-autocomplete-results .ui-menu-item {
+            font-size: 14px;
+            padding: 2px 0;
+        }
+        
+        .customer-autocomplete-results .ui-state-active,
+        .customer-autocomplete-results .ui-state-focus {
+            background-color: #337ab7;
+            border-color: #337ab7;
+            color: white;
+        }
+        
+        /* Screen reader only class for accessibility announcements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+    </style>
+}
