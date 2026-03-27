@@ -49,7 +49,7 @@ try {
                 Write-DeploymentLog "Website $siteName is already stopped (state: $($website.State))"
             }
         } catch {
-            Write-DeploymentLog "Error stopping website $siteName: ${_}" "ERROR"
+            Write-DeploymentLog "Error stopping website ${siteName}: ${_}" "ERROR"
             # Continue to try stopping app pool even if website stop fails
         }
     } else {
@@ -82,7 +82,7 @@ try {
                 Write-DeploymentLog "Application pool $appPoolName is already stopped (state: $($appPool.State))"
             }
         } catch {
-            Write-DeploymentLog "Error stopping application pool $appPoolName: ${_}" "ERROR"
+            Write-DeploymentLog "Error stopping application pool ${appPoolName}: ${_}" "ERROR"
             # Don't fail deployment if app pool stop fails - it might not exist yet
         }
     } else {
