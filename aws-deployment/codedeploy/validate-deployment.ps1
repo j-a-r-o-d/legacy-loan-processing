@@ -35,8 +35,8 @@ function Write-SafeLog {
     )
     
     # Redact password patterns
-    $safeMessage = $Message -replace "Password=[^;]+", "Password=***REDACTED***"
-    $safeMessage = $safeMessage -replace "password['""]?\s*[:=]\s*['""]?[^'"";\s]+", "password=***REDACTED***"
+    $safeMessage = $Message -replace 'Password=[^;]+', 'Password=***REDACTED***'
+    $safeMessage = $safeMessage -replace 'password\S*[:=]\S+', 'password=***REDACTED***'
     
     Write-DeploymentLog $safeMessage $Level
 }
