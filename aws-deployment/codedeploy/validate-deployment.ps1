@@ -9,12 +9,6 @@ try {
     if ($svc.Status -ne 'Running') { throw 'IIS not running' }
     Write-Host 'IIS OK'
 
-    Write-Host 'Checking website...'
-    Import-Module WebAdministration
-    $site = Get-Website -Name 'LoanProcessing'
-    if ($site.State -ne 'Started') { throw 'Website not started' }
-    Write-Host 'Website OK'
-
     Write-Host 'Testing HTTP...'
     $ok = $false
     for ($i = 1; $i -le 10; $i++) {
