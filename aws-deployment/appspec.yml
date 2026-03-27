@@ -1,0 +1,35 @@
+version: 0.0
+os: windows
+files:
+  - source: app
+    destination: C:\inetpub\wwwroot\LoanProcessing
+  - source: database
+    destination: C:\Deploy\database
+  - source: scripts
+    destination: C:\Deploy\scripts
+
+hooks:
+  ApplicationStop:
+    - location: scripts\stop-application.ps1
+      timeout: 300
+      runas: Administrator
+      
+  BeforeInstall:
+    - location: scripts\before-install.ps1
+      timeout: 300
+      runas: Administrator
+      
+  AfterInstall:
+    - location: scripts\configure-application.ps1
+      timeout: 600
+      runas: Administrator
+      
+  ApplicationStart:
+    - location: scripts\start-application.ps1
+      timeout: 300
+      runas: Administrator
+      
+  ValidateService:
+    - location: scripts\validate-deployment.ps1
+      timeout: 300
+      runas: Administrator

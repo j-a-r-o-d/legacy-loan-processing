@@ -1,0 +1,60 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Installing build dependencies..."
+      - choco install nuget.commandline -y
+      - refreshenv
+      
+  pre_build:
+    commands:
+      - echo "Restoring NuGet packages..."
+      - nuget restore LoanProcessing.sln
+      
+  build:
+    commands:
+      - echo "Building solution in Release configuration..."
+      - msbuild LoanProcessing.sln /p:Configuration=Release /p:Platform="Any CPU" /p:DeployOnBuild=false /v:minimal
+      
+  post_build:
+    commands:
+      - echo "Packaging application for deployment..."
+      - mkdir deployment-package
+      - mkdir deployment-package\app
+      - mkdir deployment-package\database
+      - mkdir deployment-package\scripts
+      
+      # Copy web application files
+      - echo "Copying web application files..."
+      - xcopy LoanProcessing.Web\bin deployment-package\app\bin\ /E /I /Y
+      - xcopy LoanProcessing.Web\Content deployment-package\app\Content\ /E /I /Y
+      - xcopy LoanProcessing.Web\fonts deployment-package\app\fonts\ /E /I /Y
+      - xcopy LoanProcessing.Web\Scripts deployment-package\app\Scripts\ /E /I /Y
+      - xcopy LoanProcessing.Web\Views deployment-package\app\Views\ /E /I /Y
+      - copy LoanProcessing.Web\Global.asax deployment-package\app\
+      - copy LoanProcessing.Web\Web.config deployment-package\app\
+      
+      # Copy database scripts
+      - echo "Copying database scripts..."
+      - xcopy database\*.sql deployment-package\database\ /E /I /Y
+      
+      # Copy deployment scripts (CodeDeploy lifecycle hooks)
+      - echo "Copying deployment scripts..."
+      - xcopy aws-deployment\codedeploy\*.ps1 deployment-package\scripts\ /Y
+      
+      # Copy appspec.yml
+      - echo "Copying appspec.yml..."
+      - copy aws-deployment\appspec.yml deployment-package\
+      
+      - echo "Build and packaging completed successfully"
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: deployment-package
+  name: loan-processing-$CODEBUILD_RESOLVED_SOURCE_VERSION
+
+cache:
+  paths:
+    - 'packages/**/*'

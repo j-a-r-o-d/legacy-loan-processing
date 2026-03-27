@@ -241,5 +241,5 @@ healthchecksdb
 Test-*.ps1
 *-Test.ps1
 
-# Pre-publish checklist (internal use only)
-PRE_PUBLISH_CHECKLIST.md
+# Deployment outputs
+deployment-outputs.txt
