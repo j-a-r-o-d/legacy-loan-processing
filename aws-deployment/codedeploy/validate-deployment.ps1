@@ -217,8 +217,10 @@ try {
     exit 0
     
 } catch {
-    Write-DeploymentLog "Fatal error in ValidateService hook: ${_}" "ERROR"
-    Write-DeploymentLog "Stack trace: $(${_}.ScriptStackTrace)" "ERROR"
+    $fatalErr = $_.Exception.Message
+    $fatalStack = $_.ScriptStackTrace
+    Write-DeploymentLog "Fatal error in ValidateService hook: $fatalErr" "ERROR"
+    Write-DeploymentLog "Stack trace: $fatalStack" "ERROR"
     Write-DeploymentLog "Deployment validation failed - this will trigger automatic rollback"
     
     # Exit with error code to fail deployment
