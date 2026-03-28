@@ -3,7 +3,8 @@
 # Requirements: 3.1, 3.7, 12.3, 13.2
 
 resource "aws_s3_bucket" "pipeline_artifacts" {
-  bucket = "loan-processing-artifacts-${var.environment}-${var.resource_suffix}"
+  bucket        = "loan-processing-artifacts-${var.environment}-${var.resource_suffix}"
+  force_destroy = true
 
   tags = merge(
     var.common_tags,
