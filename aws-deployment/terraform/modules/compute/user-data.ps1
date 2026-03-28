@@ -41,6 +41,11 @@ try {
         Write-Host ".NET Framework 4.7.2 or higher already installed"
     }
 
+    # Install NuGet provider (required for Install-Module in non-interactive sessions)
+    Write-Host "Installing NuGet provider..."
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+    Write-Host "NuGet provider installed"
+
     # Install SqlServer PowerShell module for database operations
     Write-Host "Installing SqlServer PowerShell module..."
     Install-Module SqlServer -Force -AllowClobber -Scope AllUsers
@@ -137,18 +142,22 @@ try {
     $cwConfigPath = "C:\ProgramData\Amazon\AmazonCloudWatchAgent\config.json"
     $cwConfig | ConvertTo-Json -Depth 10 | Out-File -FilePath $cwConfigPath -Encoding UTF8
     
-    # Start CloudWatch Agent
-    & "C:\Program Files\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1" `
-        -a fetch-config `
-        -m ec2 `
-        -s `
-        -c file:$cwConfigPath
-    
-    Write-Host "CloudWatch Agent configured and started"
+    # Start CloudWatch Agent (non-critical — don't block deployment if this fails)
+    try {
+        & "C:\Program Files\Amazon\AmazonCloudWatchAgent\amazon-cloudwatch-agent-ctl.ps1" `
+            -a fetch-config `
+            -m ec2 `
+            -s `
+            -c file:$cwConfigPath
+        Write-Host "CloudWatch Agent configured and started"
+    } catch {
+        Write-Host "WARNING: CloudWatch Agent configuration failed: $_"
+        Write-Host "Continuing with deployment setup..."
+    }
 
     # Install CodeDeploy Agent
     Write-Host "Installing CodeDeploy Agent..."
-    $region = (Invoke-RestMethod -Uri http://169.254.169.254/latest/meta-data/placement/region)
+    $region = "${aws_region}"
     $codeDeployInstallerUrl = "https://aws-codedeploy-$region.s3.$region.amazonaws.com/latest/codedeploy-agent.msi"
     $codeDeployInstallerPath = "C:\Windows\Temp\codedeploy-agent.msi"
     

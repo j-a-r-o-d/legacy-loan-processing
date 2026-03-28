@@ -5,6 +5,11 @@ variable "project_name" {
   type        = string
 }
 
+variable "resource_suffix" {
+  description = "Random suffix for unique resource naming"
+  type        = string
+}
+
 variable "environment" {
   description = "Environment name"
   type        = string
@@ -34,6 +39,11 @@ variable "enable_nat_gateway" {
   description = "Enable NAT Gateway for private subnets"
   type        = bool
   default     = false
+}
+
+variable "region" {
+  description = "AWS region for VPC endpoint service names"
+  type        = string
 }
 
 variable "tags" {

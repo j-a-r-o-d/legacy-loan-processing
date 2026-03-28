@@ -10,6 +10,11 @@ variable "environment" {
   type        = string
 }
 
+variable "aws_region" {
+  description = "AWS region for resource URLs"
+  type        = string
+}
+
 variable "vpc_id" {
   description = "VPC ID"
   type        = string

@@ -26,6 +26,7 @@ data "template_file" "user_data" {
     db_secret_arn = var.db_secret_arn
     project_name  = var.project_name
     environment   = var.environment
+    aws_region    = var.aws_region
   }
 }
 
