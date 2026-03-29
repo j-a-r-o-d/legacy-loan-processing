@@ -1,0 +1,26 @@
+{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          { "file_path": "C:\\inetpub\\logs\\LogFiles\\W3SVC1\\*.log", "log_group_name": "/aws/ec2/${project_name}", "log_stream_name": "{instance_id}/iis", "timezone": "UTC" },
+          { "file_path": "C:\\Windows\\System32\\LogFiles\\HTTPERR\\*.log", "log_group_name": "/aws/ec2/${project_name}", "log_stream_name": "{instance_id}/httperr", "timezone": "UTC" }
+        ]
+      },
+      "windows_events": {
+        "collect_list": [
+          { "event_name": "Application", "event_levels": ["ERROR","WARNING","INFORMATION"], "log_group_name": "/aws/ec2/${project_name}", "log_stream_name": "{instance_id}/application", "event_format": "xml" },
+          { "event_name": "System", "event_levels": ["ERROR","WARNING"], "log_group_name": "/aws/ec2/${project_name}", "log_stream_name": "{instance_id}/system", "event_format": "xml" }
+        ]
+      }
+    }
+  },
+  "metrics": {
+    "namespace": "${project_name}/${environment}",
+    "metrics_collected": {
+      "cpu": { "measurement": [{ "name": "cpu_usage_idle", "rename": "CPU_IDLE", "unit": "Percent" }], "metrics_collection_interval": 60, "totalcpu": false },
+      "disk": { "measurement": [{ "name": "used_percent", "rename": "DISK_USED", "unit": "Percent" }], "metrics_collection_interval": 60, "resources": ["*"] },
+      "memory": { "measurement": [{ "name": "mem_used_percent", "rename": "MEM_USED", "unit": "Percent" }], "metrics_collection_interval": 60 }
+    }
+  }
+}

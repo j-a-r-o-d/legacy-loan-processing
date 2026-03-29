@@ -21,12 +21,16 @@ data "template_file" "user_data" {
   template = file("${path.module}/user-data.ps1")
 
   vars = {
-    db_endpoint   = var.db_endpoint
-    db_name       = var.db_name
-    db_secret_arn = var.db_secret_arn
-    project_name  = var.project_name
-    environment   = var.environment
-    aws_region    = var.aws_region
+    db_endpoint      = var.db_endpoint
+    db_name          = var.db_name
+    db_secret_arn    = var.db_secret_arn
+    project_name     = var.project_name
+    environment      = var.environment
+    aws_region       = var.aws_region
+    cloudwatch_config = templatefile("${path.module}/cloudwatch-config.json", {
+      project_name = var.project_name
+      environment  = var.environment
+    })
   }
 }
 
