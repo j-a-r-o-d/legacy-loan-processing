@@ -19,7 +19,7 @@ BEGIN
         -- Declare variables for application and customer data
         DECLARE @CustomerId INT, @CreditScore INT, @AnnualIncome DECIMAL(18,2);
         DECLARE @RequestedAmount DECIMAL(18,2), @LoanType NVARCHAR(20);
-        DECLARE @RiskScore INT, @DebtToIncomeRatio DECIMAL(5,2);
+        DECLARE @RiskScore INT, @DebtToIncomeRatio DECIMAL(18,4);
         DECLARE @InterestRate DECIMAL(5,2), @TermMonths INT;
         
         -- Validation: Check if application exists
