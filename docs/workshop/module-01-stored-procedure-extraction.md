@@ -103,6 +103,11 @@ Follow the code path from controller to database:
 
 The repository is the integration point. Everything above it (controller, service) doesn't know or care whether the logic runs in SQL or C#. That's the strangler pattern — we redirect at the repository level.
 
+Also notice:
+
+4. `LoanProcessing.Web/Services/CreditEvaluationService.cs` — this already exists as an SP-backed stub. It calls `sp_EvaluateCredit` via SqlCommand, producing identical results to the repository. The shadow comparison tests use this service directly. During extraction, you'll replace its internals with pure C# logic.
+5. `LoanProcessing.Web/Services/ICreditEvaluationService.cs` — the interface is already defined. The extraction doesn't change the contract, only the implementation.
+
 ### 4.3 — Run the Validation Baseline
 
 Navigate to `/validation` in your browser and click "Run All Tests." Note the results:
@@ -110,8 +115,9 @@ Navigate to `/validation` in your browser and click "Run All Tests." Note the re
 - Smoke tests: all pages load
 - Data integrity: row counts and constraints verified
 - Business logic: customer CRUD, loan processing, credit evaluation, portfolio reports
+- Shadow comparison: SP vs Service — all 5 profiles should show ✅ (both paths currently hit the SP, so they match trivially)
 
-These tests will be your proof that the extraction didn't break anything.
+These tests will be your proof that the extraction didn't break anything. After extraction, the shadow comparison becomes meaningful — it will compare the SP output against your new C# implementation.
 
 
 ---
@@ -141,22 +147,27 @@ Open `.kiro/specs/credit-evaluation-extraction/design.md`
 
 Key design decisions to discuss:
 
-- **CreditEvaluationCalculator** — Pure static functions for DTI, risk score, and recommendation. No database dependencies. These are trivially unit-testable. Notice how they're shaped like agent tools — clear inputs, deterministic outputs.
+- **CreditEvaluationCalculator** — Pure static functions for DTI, risk score, and recommendation. No database dependencies. These are trivially unit-testable. Notice how they're shaped like agent tools — clear inputs, deterministic outputs. This class doesn't exist yet — you'll build it in Task 1.
 
-- **CreditEvaluationService** — Orchestrates the evaluation by calling repositories for data and the calculator for computation. Depends only on interfaces, not concrete classes.
+- **CreditEvaluationService** — Already exists as an SP-backed stub that calls `sp_EvaluateCredit` directly. During extraction, you'll replace its internals with calculator + repository logic. The interface stays the same. Notice it depends only on interfaces, not concrete classes.
 
 - **Repository redirect** — `LoanDecisionRepository.EvaluateCredit` is the single point of change. It stops calling `sp_EvaluateCredit` and delegates to `CreditEvaluationService.Evaluate` instead. `LoanService` is completely untouched.
+
+- **Shadow comparison** — The test infrastructure already compares SP output against the service output for 5 curated profiles. Pre-extraction, this is trivially SP-vs-SP. Post-extraction, it becomes a real equivalence check.
 
 ### 5.3 — Implementation Tasks
 
 Open `.kiro/specs/credit-evaluation-extraction/tasks.md`
 
-The tasks are ordered bottom-up so the codebase compiles at every step:
-1. Pure calculator functions (no dependencies)
+The tasks are ordered so the codebase compiles at every step:
+1. Pure calculator functions (no dependencies — this is the main deliverable)
 2. Repository interface extensions (new data access methods)
-3. Service implementation (orchestrates calculator + repositories)
-4. Repository redirect (the strangler switch)
-5. Final validation (deploy and run `/validation`)
+3. Replace service internals (swap the SP-backed stub with calculator + repository logic)
+4. Repository redirect (the strangler switch — production now uses the C# service)
+5. Enable boundary tests and PBT (turn on the tests that validate the new code)
+6. Final validation (deploy and run `/validation`)
+
+Note that `ICreditEvaluationService` and `CreditEvaluationService` already exist as an SP-backed stub. You don't need to create them from scratch — you're replacing the implementation. Reference implementations are available in the `solutions/` folder if you get stuck.
 
 ---
 
@@ -169,7 +180,7 @@ Now execute the spec tasks using Kiro. Open the tasks file in Kiro and begin exe
 As Kiro implements each task, pay attention to:
 
 **After Task 1 — CreditEvaluationCalculator:**
-Kiro creates `LoanProcessing.Web/Services/CreditEvaluationCalculator.cs`. Verify the extracted logic matches the stored procedure by asking Kiro to generate a comparison:
+Kiro creates `LoanProcessing.Web/Services/CreditEvaluationCalculator.cs`. This is the core extraction — pure C# functions that replicate the stored procedure's business logic. Verify the extracted logic matches the stored procedure by asking Kiro to generate a comparison:
 
 > **🤖 Kiro Prompt:** "Compare the business logic in `LoanProcessing.Web/Services/CreditEvaluationCalculator.cs` with the T-SQL in `LoanProcessing.Database/StoredProcedures/sp_EvaluateCredit.sql`. Create a side-by-side comparison table showing each calculation rule (DTI ratio formula, credit score brackets, DTI brackets, risk score formula, recommendation thresholds, default interest rate) and confirm they are functionally identical. Flag any differences."
 
@@ -180,22 +191,27 @@ Review the comparison Kiro produces. The key things that must match exactly:
 - Recommendation strings must be exact: "Recommended for Approval", "Manual Review Required", "High Risk - Recommend Rejection"
 - Default interest rate: 12.99
 
-If anything doesn't match, the validation tests will catch it later — but it's better to spot discrepancies now.
+If anything doesn't match, the validation tests will catch it later — but it's better to spot discrepancies now. A reference implementation is available in `solutions/CreditEvaluationCalculator.cs`.
 
 **After Task 2 — Repository Extensions:**
 Notice the new methods added to `IInterestRateRepository` and `ILoanApplicationRepository`. These push data filtering to the database (matching what the stored procedure did) rather than loading everything into memory.
 
-**After Task 3 — CreditEvaluationService:**
-This is the orchestrator. It loads data through repositories, delegates computation to the calculator, and writes results back. Notice it depends only on interfaces — you could swap the repositories for PostgreSQL implementations later without changing this class.
+**After Task 3 — Service Replacement (The Key Moment):**
+This is where the strangler pattern comes alive. `CreditEvaluationService` goes from calling `sp_EvaluateCredit` to using the calculator + repositories. The interface stays the same — `LoanDecision Evaluate(int applicationId)` — but the implementation is now pure C#. The shadow comparison test will now compare SP output against C# output for real.
 
-**After Task 4 — The Strangler Switch:**
-This is the key moment. `LoanDecisionRepository.EvaluateCredit` goes from calling `sp_EvaluateCredit` to calling `CreditEvaluationService.Evaluate`. The stored procedure still exists in the database — it's just no longer called. This is the strangler pattern in action.
+**After Task 4 — The Production Redirect:**
+`LoanDecisionRepository.EvaluateCredit` stops calling `sp_EvaluateCredit` and delegates to `CreditEvaluationService.Evaluate`. The stored procedure still exists in the database — it's just no longer called. This is the strangler pattern in action.
+
+**After Task 5 — Tests Enabled:**
+The boundary tests (credit score brackets, DTI brackets, recommendation thresholds) are uncommented and now validate the calculator's logic. The FsCheck property-based test project is created and runs in CI, testing the calculator with 100 random inputs per property. The PBT results appear on the validation page.
 
 ### Checkpoints
 
-After Task 3: The service is complete. All new code compiles (Kiro's diagnostics will confirm). No runtime validation yet — that comes after the strangler switch.
+After Task 3: The service internals are replaced. All new code compiles. The shadow comparison now shows a real SP-vs-C# comparison.
 
 After Task 4: Commit and push your changes. CodePipeline will deploy to EC2. Once deployed, run the validation tests from `/validation`. All tests should pass.
+
+After Task 5: PBT tests run in CI. The validation page shows boundary test results and the CI PBT summary.
 
 ---
 
@@ -210,13 +226,16 @@ All tests should pass with green status. The key tests to verify:
 - **High Credit Score Risk Assessment** — credit score 780, expects RiskScore ≤ 40
 - **Low Credit Score Risk Assessment** — credit score 550, expects RiskScore > 60
 - **Debt-to-Income Ratio Calculation** — expects DTI > 0
-- **Credit Evaluation** (in Loan Processing tests) — expects RiskScore 0–100 with recommendation
+- **Credit Score & DTI Boundary Values** — tests exact bracket thresholds (enabled after Task 5)
+- **Recommendation Threshold Boundaries** — tests recommendation classification boundaries (enabled after Task 5)
+- **Shadow Comparison: SP vs Service** — all 5 profiles should show ✅, now comparing SP output against your C# implementation
+- **CI Property-Based Test Summary** — shows FsCheck results from the latest CI build (enabled after Task 5)
 
-These tests exercise the exact same code paths as before — but now the logic runs in your .NET service layer instead of SQL Server.
+These tests exercise the exact same code paths as before — but now the logic runs in your .NET service layer instead of SQL Server. The shadow comparison proves behavioral equivalence across 5 curated loan profiles.
 
 ### 7.2 — Verify the Stored Procedure is Unused
 
-The `sp_EvaluateCredit` stored procedure still exists in the database. You can verify it's no longer being called by checking that `LoanDecisionRepository.EvaluateCredit` no longer contains any `SqlCommand` or `sp_EvaluateCredit` references.
+The `sp_EvaluateCredit` stored procedure still exists in the database. You can verify it's no longer being called by checking that `LoanDecisionRepository.EvaluateCredit` now delegates to `CreditEvaluationService.Evaluate` instead of containing `SqlCommand` or `sp_EvaluateCredit` references.
 
 ---
 
@@ -246,7 +265,11 @@ After deploying the fast-forward code, run the validation dashboard again. All t
 
 ## 9. Key Takeaways
 
-**The strangler pattern** lets you migrate business logic incrementally — one stored procedure at a time — without a big-bang rewrite. Each extraction is independently deployable and verifiable.
+**The strangler pattern** lets you migrate business logic incrementally — one stored procedure at a time — without a big-bang rewrite. Each extraction is independently deployable and verifiable. The SP-backed service stub gave you a safe seam to work with — production stayed on the SP until you were ready to flip the switch.
+
+**The shadow comparison** proves behavioral equivalence. Before extraction, both paths hit the SP (trivial pass). After extraction, the comparison is real — SP vs C# logic across 5 curated profiles. If anything diverges, you see it immediately.
+
+**Property-based testing** becomes possible only after extraction. When business logic is trapped in a stored procedure, you can't test individual calculation steps in isolation. Once extracted into pure C# functions, FsCheck validates the math across hundreds of random inputs — catching edge cases that hand-written tests miss.
 
 **The validation framework** is your safety net. It proves behavioral equivalence at every step, giving you confidence to proceed to the next module.
 

@@ -73,7 +73,7 @@ namespace LoanProcessing.Web.Validation
             _dataIntegrityTests = new DataIntegrityTests(_databaseHelper, baseline);
             _customerBusinessTests = new CustomerBusinessTests(customerService, _cleanup);
             _loanProcessingTests = new LoanProcessingTests(loanService, reportService, _customerBusinessTests);
-            _creditEvaluationTests = new CreditEvaluationTests(loanService, customerService, _cleanup, _customerBusinessTests, _databaseHelper);
+            _creditEvaluationTests = new CreditEvaluationTests(loanService, customerService, _cleanup, _customerBusinessTests, _databaseHelper, new CreditEvaluationService());
         }
 
         /// <summary>
