@@ -16,5 +16,7 @@ namespace LoanProcessing.Web.Validation.Models
         public bool AllPassed => Results.All(r => r.Passed);
         public TimeSpan TotalDuration { get; set; }
         public Dictionary<string, string> WhyThisMatters { get; set; } = new Dictionary<string, string>();
+        public List<ShadowComparisonResult> ShadowComparisonResults { get; set; } = new List<ShadowComparisonResult>();
+        public PbtRunSummary PbtSummary { get; set; }
     }
 }

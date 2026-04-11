@@ -366,4 +366,58 @@
             </div>
         }
     }
+
+    @if (Model != null && Model.DetectedStage == ModernizationStage.PreModernization && Model.ShadowComparisonResults != null && Model.ShadowComparisonResults.Any())
+    {
+        <div class="category-card">
+            <div class="category-header">&#128269; Shadow Comparison: SP vs Service</div>
+            <div style="padding: 0 20px 16px;">
+                <table class="table" style="margin-top: 12px; font-size: 13px;">
+                    <thead>
+                        <tr>
+                            <th>Scenario</th>
+                            <th>SP RiskScore</th>
+                            <th>Svc RiskScore</th>
+                            <th>SP DTI</th>
+                            <th>Svc DTI</th>
+                            <th>SP Rate</th>
+                            <th>Svc Rate</th>
+                            <th>SP Rec</th>
+                            <th>Svc Rec</th>
+                            <th>Match</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.ShadowComparisonResults)
+                        {
+                            <tr>
+                                <td>@r.ScenarioName</td>
+                                <td>@r.SpRiskScore</td>
+                                <td>@r.SvcRiskScore</td>
+                                <td>@(r.SpDti.HasValue ? r.SpDti.Value.ToString("F2") : "")</td>
+                                <td>@(r.SvcDti.HasValue ? r.SvcDti.Value.ToString("F2") : "")</td>
+                                <td>@(r.SpInterestRate.HasValue ? r.SpInterestRate.Value.ToString("F2") : "")</td>
+                                <td>@(r.SvcInterestRate.HasValue ? r.SvcInterestRate.Value.ToString("F2") : "")</td>
+                                <td>@r.SpRecommendation</td>
+                                <td>@r.SvcRecommendation</td>
+                                <td>@Html.Raw(r.AllMatch ? "&#9989;" : "&#10060;")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (Model != null && Model.PbtSummary != null)
+    {
+        <div class="category-card">
+            <div class="category-header">&#129514; CI Property-Based Test Summary</div>
+            <div style="padding: 14px 20px; font-size: 14px; line-height: 1.8;">
+                <div><strong>Properties:</strong> @Model.PbtSummary.PassedProperties / @Model.PbtSummary.TotalProperties passed</div>
+                <div><strong>Build ID:</strong> @Model.PbtSummary.BuildId</div>
+                <div><strong>Run Timestamp:</strong> @Model.PbtSummary.RunTimestamp.ToString("yyyy-MM-dd HH:mm:ss UTC")</div>
+            </div>
+        </div>
+    }
 </div>

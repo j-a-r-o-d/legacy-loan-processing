@@ -15,8 +15,49 @@ namespace LoanProcessing.Web.Validation.Tests
         private readonly TestDataCleanup _cleanup;
         private readonly CustomerBusinessTests _customerTests;
         private readonly DatabaseHelper _db;
+        private readonly List<ShadowComparisonResult> _shadowComparisonResults = new List<ShadowComparisonResult>();
 
         public string CategoryName { get { return "BusinessLogic"; } }
+        public List<ShadowComparisonResult> ShadowComparisonResults { get { return _shadowComparisonResults; } }
+
+        private static readonly List<ShadowTestProfile> ShadowProfiles = new List<ShadowTestProfile>
+        {
+            new ShadowTestProfile
+            {
+                ScenarioName = "High Credit No Debt",
+                CreditScore = 780, AnnualIncome = 120000m,
+                LoanType = "Personal", RequestedAmount = 30000m, TermMonths = 36,
+                ExpectedRecommendationCategory = "Approval"
+            },
+            new ShadowTestProfile
+            {
+                ScenarioName = "Low Credit High Amount",
+                CreditScore = 550, AnnualIncome = 35000m,
+                LoanType = "Personal", RequestedAmount = 50000m, TermMonths = 60,
+                ExpectedRecommendationCategory = "Rejection"
+            },
+            new ShadowTestProfile
+            {
+                ScenarioName = "Borderline DTI 35%",
+                CreditScore = 700, AnnualIncome = 80000m,
+                LoanType = "Personal", RequestedAmount = 28000m, TermMonths = 36,
+                ExpectedRecommendationCategory = "Review"
+            },
+            new ShadowTestProfile
+            {
+                ScenarioName = "Existing Approved Loans",
+                CreditScore = 720, AnnualIncome = 90000m,
+                LoanType = "Personal", RequestedAmount = 20000m, TermMonths = 36,
+                ExpectedRecommendationCategory = "Depends"
+            },
+            new ShadowTestProfile
+            {
+                ScenarioName = "Auto Loan Rate Lookup",
+                CreditScore = 680, AnnualIncome = 70000m,
+                LoanType = "Auto", RequestedAmount = 25000m, TermMonths = 48,
+                ExpectedRecommendationCategory = "Review"
+            }
+        };
 
         public CreditEvaluationTests(ILoanService loanService, ICustomerService customerService, TestDataCleanup cleanup, CustomerBusinessTests customerTests, DatabaseHelper databaseHelper = null)
         {
@@ -29,6 +70,7 @@ namespace LoanProcessing.Web.Validation.Tests
 
         public List<TestResult> Run(ModernizationStage stage)
         {
+            _shadowComparisonResults.Clear();
             var results = new List<TestResult>();
             results.Add(TestHighCreditScore(stage));
             results.Add(TestLowCreditScore(stage));
@@ -38,10 +80,10 @@ namespace LoanProcessing.Web.Validation.Tests
             results.Add(TestCreditScoreBoundaries(stage));
             results.Add(TestRecommendationBoundaries(stage));
 
-            // Shadow test — compare SP vs C# on same input (PreModernization only)
+            // Shadow tests — compare SP vs C# on same input (PreModernization only)
             if (stage == ModernizationStage.PreModernization && _db != null && !_db.IsPostgreSQL)
             {
-                results.Add(TestShadowComparison(stage));
+                results.AddRange(RunAllShadowComparisons(stage));
             }
 
             // Final cleanup of all test data
@@ -251,64 +293,132 @@ namespace LoanProcessing.Web.Validation.Tests
             catch (Exception ex) { sw.Stop(); return Fail(sw, "Recommendation Threshold Boundaries", "Tests recommendation boundary values", "All boundaries correct", "Exception: " + ex.Message, stage); }
         }
 
-        private TestResult TestShadowComparison(ModernizationStage stage)
+        private List<TestResult> RunAllShadowComparisons(ModernizationStage stage)
+        {
+            var results = new List<TestResult>();
+
+            // Pre-clean orphaned 999- data from a previous run
+            _cleanup.CleanupBySSNPrefix("999-");
+
+            int passed = 0;
+            int total = ShadowProfiles.Count;
+            var overallSw = Stopwatch.StartNew();
+
+            for (int i = 0; i < ShadowProfiles.Count; i++)
+            {
+                var profile = ShadowProfiles[i];
+                try
+                {
+                    var result = RunShadowComparisonForProfile(profile, stage, i);
+                    results.Add(result);
+                    if (result.Passed) passed++;
+                }
+                catch (Exception ex)
+                {
+                    var sw = Stopwatch.StartNew();
+                    sw.Stop();
+                    results.Add(Fail(sw, "Shadow: " + profile.ScenarioName, "Shadow comparison for " + profile.ScenarioName, "SP and Service produce identical outputs", "Exception: " + ex.Message, stage));
+                    _shadowComparisonResults.Add(new ShadowComparisonResult
+                    {
+                        ScenarioName = profile.ScenarioName,
+                        AllMatch = false
+                    });
+                }
+            }
+
+            overallSw.Stop();
+
+            // Append summary TestResult
+            bool allPassed = passed == total;
+            results.Add(new TestResult
+            {
+                TestName = "Shadow Comparison Summary",
+                Category = CategoryName,
+                Description = "Summary of all " + total + " shadow comparison profiles: SP vs Service equivalence",
+                Passed = allPassed,
+                Expected = total + "/" + total + " profiles match",
+                Actual = passed + "/" + total + " profiles match",
+                WhatToCheck = allPassed ? string.Empty : "One or more shadow profiles showed divergence between SP and service. Check individual profile results above.",
+                Duration = overallSw.Elapsed
+            });
+
+            return results;
+        }
+
+        private TestResult RunShadowComparisonForProfile(ShadowTestProfile profile, ModernizationStage stage, int profileIndex)
         {
             var sw = Stopwatch.StartNew();
             try
             {
-                int customerId = _customerTests.LastCreatedCustomerId;
-                if (customerId <= 0) return Fail(sw, "Shadow: SP vs Service Comparison", "Compares stored procedure and service outputs", "Test customer exists", "Create Customer test must pass first", stage);
-
-                // Set a known credit score for deterministic comparison
-                UpdateCustomerScore(customerId, 720, 90000m);
-
-                // Submit a fresh application
-                var app = new LoanApplication { CustomerId = customerId, LoanType = "Personal", RequestedAmount = 20000m, TermMonths = 36, Purpose = "Validation - shadow comparison" };
-                int appId = _loanService.SubmitLoanApplication(app);
-
-                // Step 1: Call sp_EvaluateCredit directly via ADO.NET
-                LoanDecision spResult = null;
-                using (var connection = new System.Data.SqlClient.SqlConnection(_db.IsPostgreSQL ? null : GetConnectionString()))
+                // Step 1: Create a fresh test customer with unique SSN
+                string ssn = "999-00-000" + (profileIndex + 1);
+                var customer = new Customer
                 {
-                    connection.Open();
-                    using (var command = new System.Data.SqlClient.SqlCommand("sp_EvaluateCredit", connection))
-                    {
-                        command.CommandType = System.Data.CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@ApplicationId", appId);
-                        using (var reader = command.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                spResult = new LoanDecision
-                                {
-                                    ApplicationId = reader.GetInt32(reader.GetOrdinal("ApplicationId")),
-                                    RiskScore = reader.IsDBNull(reader.GetOrdinal("RiskScore")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("RiskScore")),
-                                    DebtToIncomeRatio = reader.IsDBNull(reader.GetOrdinal("DebtToIncomeRatio")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("DebtToIncomeRatio")),
-                                    InterestRate = reader.IsDBNull(reader.GetOrdinal("InterestRate")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("InterestRate")),
-                                    Comments = reader.GetString(reader.GetOrdinal("Recommendation"))
-                                };
-                            }
-                        }
-                    }
+                    FirstName = "Shadow",
+                    LastName = profile.ScenarioName,
+                    SSN = ssn,
+                    CreditScore = profile.CreditScore,
+                    AnnualIncome = profile.AnnualIncome,
+                    DateOfBirth = new DateTime(1985, 6, 15),
+                    Email = "shadow" + (profileIndex + 1) + "@test.com",
+                    Phone = "555-000-000" + (profileIndex + 1),
+                    Address = "1 Shadow Test Lane"
+                };
+                int customerId = _customerService.CreateCustomer(customer);
 
-                    // Step 2: Reset application state so the service sees the same starting point
-                    using (var resetCmd = new System.Data.SqlClient.SqlCommand(
-                        "UPDATE LoanApplications SET Status = 'Pending', InterestRate = NULL WHERE ApplicationId = @AppId", connection))
+                // Step 2: For Profile 4 ("Existing Approved Loans"), submit and approve a preliminary loan first
+                if (profile.ScenarioName == "Existing Approved Loans")
+                {
+                    var prelimApp = new LoanApplication
                     {
-                        resetCmd.Parameters.AddWithValue("@AppId", appId);
-                        resetCmd.ExecuteNonQuery();
-                    }
+                        CustomerId = customerId,
+                        LoanType = "Personal",
+                        RequestedAmount = 15000m,
+                        TermMonths = 24,
+                        Purpose = "Shadow comparison - preliminary loan for existing debt"
+                    };
+                    int prelimAppId = _loanService.SubmitLoanApplication(prelimApp);
+                    _loanService.EvaluateCredit(prelimAppId);
+                    _loanService.ProcessLoanDecision(prelimAppId, "Approved", "Preliminary loan for shadow test", "ValidationSystem");
                 }
 
-                // Step 3: Call CreditEvaluationService via the normal service path
+                // Step 3: Submit the loan application for shadow comparison
+                var app = new LoanApplication
+                {
+                    CustomerId = customerId,
+                    LoanType = profile.LoanType,
+                    RequestedAmount = profile.RequestedAmount,
+                    TermMonths = profile.TermMonths,
+                    Purpose = "Shadow comparison - " + profile.ScenarioName
+                };
+                int appId = _loanService.SubmitLoanApplication(app);
+
+                // Step 4: Call sp_EvaluateCredit directly via SqlCommand
+                LoanDecision spResult = CallStoredProcedureDirectly(appId);
+
+                // Step 5: Reset application state
+                ResetApplicationState(appId);
+
+                // Step 6: Call CreditEvaluationService via the normal service path
                 LoanDecision svcResult = _loanService.EvaluateCredit(appId);
 
                 sw.Stop();
 
                 if (spResult == null)
-                    return Fail(sw, "Shadow: SP vs Service Comparison", "Compares stored procedure and service outputs on identical input", "SP returns result", "SP returned null", stage);
+                {
+                    _shadowComparisonResults.Add(new ShadowComparisonResult
+                    {
+                        ScenarioName = profile.ScenarioName,
+                        SvcRiskScore = svcResult != null ? svcResult.RiskScore : null,
+                        SvcDti = svcResult != null ? svcResult.DebtToIncomeRatio : null,
+                        SvcInterestRate = svcResult != null ? svcResult.InterestRate : null,
+                        SvcRecommendation = svcResult != null ? svcResult.Comments : null,
+                        AllMatch = false
+                    });
+                    return Fail(sw, "Shadow: " + profile.ScenarioName, "Shadow comparison for " + profile.ScenarioName, "SP returns result", "SP returned null", stage);
+                }
 
-                // Step 4: Compare outputs
+                // Step 7: Compare the four values
                 var mismatches = new List<string>();
                 if (spResult.RiskScore != svcResult.RiskScore)
                     mismatches.Add("RiskScore: SP=" + spResult.RiskScore + " vs Svc=" + svcResult.RiskScore);
@@ -317,26 +427,99 @@ namespace LoanProcessing.Web.Validation.Tests
                 if (spResult.InterestRate != svcResult.InterestRate)
                     mismatches.Add("Rate: SP=" + spResult.InterestRate + " vs Svc=" + svcResult.InterestRate);
                 if (spResult.Comments != svcResult.Comments)
-                    mismatches.Add("Recommendation: SP='" + spResult.Comments + "' vs Svc='" + svcResult.Comments + "'");
+                    mismatches.Add("Rec: SP='" + spResult.Comments + "' vs Svc='" + svcResult.Comments + "'");
 
                 bool passed = mismatches.Count == 0;
+
+                // Step 8: Store comparison result for view rendering
+                _shadowComparisonResults.Add(new ShadowComparisonResult
+                {
+                    ScenarioName = profile.ScenarioName,
+                    SpRiskScore = spResult.RiskScore,
+                    SvcRiskScore = svcResult.RiskScore,
+                    SpDti = spResult.DebtToIncomeRatio,
+                    SvcDti = svcResult.DebtToIncomeRatio,
+                    SpInterestRate = spResult.InterestRate,
+                    SvcInterestRate = svcResult.InterestRate,
+                    SpRecommendation = spResult.Comments,
+                    SvcRecommendation = svcResult.Comments,
+                    AllMatch = passed
+                });
+
                 string actual = passed
                     ? "RiskScore=" + svcResult.RiskScore + ", DTI=" + svcResult.DebtToIncomeRatio + ", Rate=" + svcResult.InterestRate + ", Rec='" + svcResult.Comments + "'"
                     : string.Join("; ", mismatches);
 
                 return new TestResult
                 {
-                    TestName = "Shadow: SP vs Service Comparison",
+                    TestName = "Shadow: " + profile.ScenarioName,
                     Category = CategoryName,
-                    Description = "Runs both sp_EvaluateCredit and CreditEvaluationService on the same loan application and compares RiskScore, DTI, InterestRate, and Recommendation to prove behavioral equivalence",
+                    Description = "Runs both sp_EvaluateCredit and CreditEvaluationService on the same loan application (" + profile.ScenarioName + ") and compares RiskScore, DTI, InterestRate, and Recommendation",
                     Passed = passed,
                     Expected = "SP and Service produce identical outputs",
                     Actual = actual,
-                    WhatToCheck = passed ? string.Empty : "The stored procedure and C# service produced different results for the same input. Check the extraction logic in CreditEvaluationCalculator and CreditEvaluationService.",
+                    WhatToCheck = passed ? string.Empty : "The stored procedure and C# service produced different results for " + profile.ScenarioName + ". Check the extraction logic in CreditEvaluationCalculator and CreditEvaluationService.",
                     Duration = sw.Elapsed
                 };
             }
-            catch (Exception ex) { sw.Stop(); return Fail(sw, "Shadow: SP vs Service Comparison", "Compares stored procedure and service outputs", "Both paths produce identical results", "Exception: " + ex.Message, stage); }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                _shadowComparisonResults.Add(new ShadowComparisonResult
+                {
+                    ScenarioName = profile.ScenarioName,
+                    AllMatch = false
+                });
+                return Fail(sw, "Shadow: " + profile.ScenarioName, "Shadow comparison for " + profile.ScenarioName, "SP and Service produce identical outputs", "Exception: " + ex.Message, stage);
+            }
+        }
+
+        private void ResetApplicationState(int appId)
+        {
+            using (var connection = new System.Data.SqlClient.SqlConnection(GetConnectionString()))
+            {
+                connection.Open();
+                using (var cmd = new System.Data.SqlClient.SqlCommand(
+                    "DELETE FROM LoanDecisions WHERE ApplicationId = @AppId", connection))
+                {
+                    cmd.Parameters.AddWithValue("@AppId", appId);
+                    cmd.ExecuteNonQuery();
+                }
+                using (var cmd = new System.Data.SqlClient.SqlCommand(
+                    "UPDATE LoanApplications SET Status = 'Pending', InterestRate = NULL WHERE ApplicationId = @AppId", connection))
+                {
+                    cmd.Parameters.AddWithValue("@AppId", appId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        private LoanDecision CallStoredProcedureDirectly(int appId)
+        {
+            using (var connection = new System.Data.SqlClient.SqlConnection(GetConnectionString()))
+            {
+                connection.Open();
+                using (var command = new System.Data.SqlClient.SqlCommand("sp_EvaluateCredit", connection))
+                {
+                    command.CommandType = System.Data.CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@ApplicationId", appId);
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            return new LoanDecision
+                            {
+                                ApplicationId = reader.GetInt32(reader.GetOrdinal("ApplicationId")),
+                                RiskScore = reader.IsDBNull(reader.GetOrdinal("RiskScore")) ? (int?)null : reader.GetInt32(reader.GetOrdinal("RiskScore")),
+                                DebtToIncomeRatio = reader.IsDBNull(reader.GetOrdinal("DebtToIncomeRatio")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("DebtToIncomeRatio")),
+                                InterestRate = reader.IsDBNull(reader.GetOrdinal("InterestRate")) ? (decimal?)null : reader.GetDecimal(reader.GetOrdinal("InterestRate")),
+                                Comments = reader.GetString(reader.GetOrdinal("Recommendation"))
+                            };
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         private string GetConnectionString()

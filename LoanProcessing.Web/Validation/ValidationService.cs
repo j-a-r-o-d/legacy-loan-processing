@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Web.Script.Serialization;
 using LoanProcessing.Web.Data;
 using LoanProcessing.Web.Services;
 using LoanProcessing.Web.Validation.Helpers;
@@ -108,7 +110,9 @@ namespace LoanProcessing.Web.Validation
                     StageSummary = GetStageSummary(stage),
                     Results = allResults,
                     TotalDuration = overallStopwatch.Elapsed,
-                    WhyThisMatters = GetWhyThisMatters()
+                    WhyThisMatters = GetWhyThisMatters(),
+                    ShadowComparisonResults = _creditEvaluationTests.ShadowComparisonResults,
+                    PbtSummary = LoadPbtSummary()
                 };
 
                 // On first successful Pre-Modernization run where all tests pass, capture baseline
@@ -214,6 +218,23 @@ namespace LoanProcessing.Web.Validation
                         Duration = TimeSpan.Zero
                     }
                 };
+            }
+        }
+
+        private static PbtRunSummary LoadPbtSummary()
+        {
+            try
+            {
+                string basePath = AppDomain.CurrentDomain.BaseDirectory;
+                string pbtPath = Path.Combine(basePath, "pbt-results.json");
+                if (!File.Exists(pbtPath)) return null;
+                string json = File.ReadAllText(pbtPath);
+                var serializer = new JavaScriptSerializer();
+                return serializer.Deserialize<PbtRunSummary>(json);
+            }
+            catch
+            {
+                return null;
             }
         }
 

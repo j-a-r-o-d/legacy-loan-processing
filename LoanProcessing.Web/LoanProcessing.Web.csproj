@@ -204,6 +204,9 @@
     <Compile Include="Validation\Models\ModernizationStage.cs" />
     <Compile Include="Validation\Models\TestResult.cs" />
     <Compile Include="Validation\Models\ValidationRunResult.cs" />
+    <Compile Include="Validation\Models\ShadowTestProfile.cs" />
+    <Compile Include="Validation\Models\ShadowComparisonResult.cs" />
+    <Compile Include="Validation\Models\PbtRunSummary.cs" />
     <Compile Include="Validation\IValidationTestCategory.cs" />
     <Compile Include="Validation\StageDetector.cs" />
     <Compile Include="Validation\Helpers\DatabaseHelper.cs" />
