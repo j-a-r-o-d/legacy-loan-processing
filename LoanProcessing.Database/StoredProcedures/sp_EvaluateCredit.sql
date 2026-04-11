@@ -73,8 +73,10 @@ BEGIN
                 ELSE 30
             END;
         
-        -- Total risk score
+        -- Total risk score (clamped to 0-100)
         SET @RiskScore = @CreditScoreComponent + @DTIComponent;
+        IF @RiskScore > 100 SET @RiskScore = 100;
+        IF @RiskScore < 0 SET @RiskScore = 0;
         
         -- Select appropriate interest rate from InterestRates table (Requirement 3.4)
         SELECT TOP 1 @InterestRate = [Rate]

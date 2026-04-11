@@ -24,7 +24,7 @@ namespace LoanProcessing.Web.Services
         /// <returns>The DTI ratio as a percentage.</returns>
         public static decimal CalculateDtiRatio(decimal existingDebt, decimal requestedAmount, decimal annualIncome)
         {
-            return ((existingDebt + requestedAmount) / annualIncome) * 100;
+            return Math.Round(((existingDebt + requestedAmount) / annualIncome) * 100, 4);
         }
 
         /// <summary>
