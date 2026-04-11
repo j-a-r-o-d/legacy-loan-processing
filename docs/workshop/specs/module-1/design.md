@@ -2,9 +2,13 @@
 
 ## Overview
 
-This design extracts the credit evaluation business logic from the `sp_EvaluateCredit` SQL Server stored procedure into a new `CreditEvaluationService` in the .NET service layer. The extraction follows the strangler pattern: the stored procedure remains in the database for rollback, but runtime traffic is redirected to the C# implementation.
+This design extracts the credit evaluation business logic from the `sp_EvaluateCredit` SQL Server stored procedure into the `CreditEvaluationService` in the .NET service layer. The extraction follows the strangler pattern: the stored procedure remains in the database for rollback, but runtime traffic is redirected to the C# implementation.
+
+`ICreditEvaluationService` and `CreditEvaluationService` already exist as an SP-backed stub — the service currently delegates to `sp_EvaluateCredit` via SqlCommand, producing identical results to the stored procedure. This stub was created during the shadow-comparison-validation phase to establish the service seam. The extraction replaces the stub's internals with pure C# computation via `CreditEvaluationCalculator` and repository data access.
 
 The key integration point is `LoanDecisionRepository.EvaluateCredit`. Today it calls `sp_EvaluateCredit` directly via ADO.NET. After extraction, it delegates to `CreditEvaluationService.Evaluate`, which performs all computation in C# and reads/writes data through repository interfaces. The `LoanService` layer above is untouched — it continues to call `ILoanDecisionRepository.EvaluateCredit` as before.
+
+The shadow comparison test infrastructure is already in place — it compares SP output against the service output for 5 curated profiles. Pre-extraction, this comparison is trivially SP-vs-SP. Post-extraction, it becomes a real SP-vs-C# equivalence check.
 
 This is the first stored procedure extraction and establishes the pattern for the remaining three (`sp_ProcessLoanDecision`, `sp_CalculatePaymentSchedule`, `sp_GeneratePortfolioReport`).
 
@@ -120,40 +124,38 @@ graph TD
     style CEC fill:#90EE90
 ```
 
-Green nodes are new components introduced by this extraction.
+Green nodes are new components introduced by this extraction. Yellow nodes already exist as stubs and will be modified.
 
 
 ## Components and Interfaces
 
 ### New Components
 
-#### 1. `ICreditEvaluationService` (Interface)
+#### 1. `ICreditEvaluationService` (Interface — Already Exists)
 
 **Namespace:** `LoanProcessing.Web.Services`
 **File:** `LoanProcessing.Web/Services/ICreditEvaluationService.cs`
+
+Already created during shadow-comparison-validation phase. No changes needed to the interface.
 
 ```csharp
 namespace LoanProcessing.Web.Services
 {
     public interface ICreditEvaluationService
     {
-        /// <summary>
-        /// Evaluates credit for a loan application.
-        /// Replaces sp_EvaluateCredit stored procedure logic.
-        /// </summary>
-        /// <param name="applicationId">The application ID to evaluate.</param>
-        /// <returns>A LoanDecision with RiskScore, DTI, InterestRate, and Recommendation.</returns>
         LoanDecision Evaluate(int applicationId);
     }
 }
 ```
 
-#### 2. `CreditEvaluationService` (Implementation)
+#### 2. `CreditEvaluationService` (Implementation — Exists as SP-Backed Stub, Needs Replacement)
 
 **Namespace:** `LoanProcessing.Web.Services`
 **File:** `LoanProcessing.Web/Services/CreditEvaluationService.cs`
 
-Dependencies (constructor-injected):
+Currently delegates to `sp_EvaluateCredit` via SqlCommand. The extraction replaces the internals with calculator + repository logic.
+
+Post-extraction dependencies (constructor-injected):
 - `ILoanApplicationRepository` — fetch application, get approved amounts, update status/rate
 - `ICustomerRepository` — fetch customer (credit score, annual income)
 - `IInterestRateRepository` — look up applicable interest rate
@@ -185,12 +187,12 @@ namespace LoanProcessing.Web.Services
 }
 ```
 
-#### 3. `CreditEvaluationCalculator` (Static Helper)
+#### 3. `CreditEvaluationCalculator` (Static Helper — To Be Created)
 
 **Namespace:** `LoanProcessing.Web.Services`
 **File:** `LoanProcessing.Web/Services/CreditEvaluationCalculator.cs`
 
-Pure functions with no dependencies — the primary target for property-based testing.
+Does not exist yet — this is the primary deliverable of the extraction. Pure functions with no dependencies — the primary target for property-based testing. A reference implementation is available in `solutions/CreditEvaluationCalculator.cs`.
 
 ```csharp
 namespace LoanProcessing.Web.Services
@@ -236,7 +238,7 @@ namespace LoanProcessing.Web.Services
 
 **Change:** The `EvaluateCredit` method stops calling `sp_EvaluateCredit` and instead delegates to `ICreditEvaluationService.Evaluate`.
 
-**Constructor change:** Add `ICreditEvaluationService` as a constructor parameter. The parameterless constructor (used by `LoanController` and `ValidationService`) must wire up the full dependency chain manually, consistent with the existing legacy DI pattern.
+**Constructor change:** Add `ICreditEvaluationService` as a constructor parameter. The `LoanDecisionRepository(string connectionString)` constructor (used by `LoanController` and `ValidationService`) must wire up the full dependency chain manually, consistent with the existing legacy DI pattern.
 
 ```csharp
 // New constructor signature
@@ -249,15 +251,15 @@ public LoanDecision EvaluateCredit(int applicationId)
 }
 ```
 
-The parameterless constructor creates the full chain:
+The `(string connectionString)` constructor creates the full chain (callers like `LoanController` and `ValidationService` use this constructor):
 ```csharp
-public LoanDecisionRepository()
+public LoanDecisionRepository(string connectionString)
+    : this(connectionString,
+          new CreditEvaluationService(
+              new LoanApplicationRepository(connectionString),
+              new CustomerRepository(connectionString),
+              new InterestRateRepository(connectionString)))
 {
-    _connectionString = ConfigurationManager.ConnectionStrings["LoanProcessingConnection"].ConnectionString;
-    var loanAppRepo = new LoanApplicationRepository(_connectionString);
-    var customerRepo = new CustomerRepository(_connectionString);
-    var rateRepo = new InterestRateRepository(_connectionString);
-    _creditEvalService = new CreditEvaluationService(loanAppRepo, customerRepo, rateRepo);
 }
 ```
 
@@ -553,15 +555,17 @@ public Property DtiRatio_MatchesFormula() { ... }
 
 ### Test Organization
 
+The `LoanProcessing.Tests` project does not exist yet — it will be created as part of this extraction. A reference implementation is available in `solutions/LoanProcessing.Tests/`.
+
 ```
-LoanProcessing.Tests/                          (new test project)
-├── Properties/
-│   └── CreditEvaluationPropertyTests.cs       (FsCheck property tests for Properties 1-5)
-├── Unit/
-│   ├── CreditEvaluationCalculatorTests.cs     (boundary/edge case unit tests)
-│   ├── CreditEvaluationServiceTests.cs        (service integration with mocked repos)
-│   └── InterestRateLookupTests.cs             (Property 6 + edge cases for rate lookup)
+LoanProcessing.Tests/                          (to be created during extraction)
+├── CreditEvaluationCalculatorProperties.cs    (FsCheck property tests for Properties 1-5)
+├── StageGuardProperties.cs                    (stage guard property tests)
+├── FaultIsolationProperties.cs                (fault isolation property tests)
+└── packages.config
 ```
 
-The existing `LoanProcessing.Web/Validation/Tests/` files (`CreditEvaluationTests.cs`, `LoanProcessingTests.cs`) remain unchanged and serve as the behavioral equivalence gate (Req 8.5).
+Boundary tests (`TestCreditScoreBoundaries`, `TestRecommendationBoundaries`) are currently commented out in `CreditEvaluationTests.cs` — they will be uncommented once the calculator is built.
+
+The FsCheck CI step in `buildspec.yml` is gated — it checks for `LoanProcessing.Tests.csproj` existence before building and running. Once the project is created, PBT runs automatically in CI.
 

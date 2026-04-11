@@ -124,7 +124,16 @@ These tests will be your proof that the extraction didn't break anything. After 
 
 ## 5. Review the Spec (10–15 min)
 
-The extraction is driven by a Kiro spec. Open and review each document to understand the plan before executing it.
+The extraction is driven by a Kiro spec. The spec files are provided in `docs/workshop/specs/module-1/`. Before starting, copy them into your Kiro specs directory:
+
+```bash
+mkdir -p .kiro/specs/credit-evaluation-extraction
+cp docs/workshop/specs/module-1/requirements.md .kiro/specs/credit-evaluation-extraction/
+cp docs/workshop/specs/module-1/design.md .kiro/specs/credit-evaluation-extraction/
+cp docs/workshop/specs/module-1/tasks.md .kiro/specs/credit-evaluation-extraction/
+```
+
+Open and review each document to understand the plan before executing it.
 
 ### 5.1 — Requirements Document
 
@@ -187,7 +196,7 @@ Kiro creates `LoanProcessing.Web/Services/CreditEvaluationCalculator.cs`. This i
 Review the comparison Kiro produces. The key things that must match exactly:
 - Credit score bracket thresholds and return values (750→10, 700→20, 650→35, 600→50, <600→75)
 - DTI bracket thresholds and boundary behavior (≤20→0, ≤35→10, ≤43→20, >43→30 — note ≤ not <)
-- DTI formula: `((existingDebt + requestedAmount) / annualIncome) * 100`
+- DTI formula: `Math.Round(((existingDebt + requestedAmount) / annualIncome) * 100, 4)` — rounded to 4 decimal places to match SQL Server's DECIMAL(18,4)
 - Recommendation strings must be exact: "Recommended for Approval", "Manual Review Required", "High Risk - Recommend Rejection"
 - Default interest rate: 12.99
 
@@ -199,11 +208,15 @@ Notice the new methods added to `IInterestRateRepository` and `ILoanApplicationR
 **After Task 3 — Service Replacement (The Key Moment):**
 This is where the strangler pattern comes alive. `CreditEvaluationService` goes from calling `sp_EvaluateCredit` to using the calculator + repositories. The interface stays the same — `LoanDecision Evaluate(int applicationId)` — but the implementation is now pure C#. The shadow comparison test will now compare SP output against C# output for real.
 
+> **⚠️ Watch out:** `CreditEvaluationTests.cs` has a fallback `new CreditEvaluationService()` that will fail to compile once the parameterless constructor is removed. The tasks file covers this — make sure Kiro updates both `ValidationService.cs` and `CreditEvaluationTests.cs`.
+
 **After Task 4 — The Production Redirect:**
-`LoanDecisionRepository.EvaluateCredit` stops calling `sp_EvaluateCredit` and delegates to `CreditEvaluationService.Evaluate`. The stored procedure still exists in the database — it's just no longer called. This is the strangler pattern in action.
+`LoanDecisionRepository.EvaluateCredit` stops calling `sp_EvaluateCredit` and delegates to `CreditEvaluationService.Evaluate`. The stored procedure still exists in the database — it's just no longer called. This is the strangler pattern in action. Note that `LoanDecisionRepository` (in the `Data` namespace) now needs `using LoanProcessing.Web.Services;` since it references `ICreditEvaluationService`.
 
 **After Task 5 — Tests Enabled:**
-The boundary tests (credit score brackets, DTI brackets, recommendation thresholds) are uncommented and now validate the calculator's logic. The FsCheck property-based test project is created and runs in CI, testing the calculator with 100 random inputs per property. The PBT results appear on the validation page.
+The boundary test calls in `CreditEvaluationTests.Run()` are uncommented, and the boundary test methods are implemented (the starter code has placeholder stubs that must be replaced with real implementations following the same `TestResult` pattern as the existing tests). The FsCheck property-based test project is created and runs in CI, testing the calculator with 100 random inputs per property. The PBT results appear on the validation page.
+
+> **Note:** The PBT project must use the same package versions as the existing project: xunit 2.4.2 (matching `xunit.runner.console.2.4.2` in `buildspec.yml`), FSharp.Core 4.2.3 (matching `LoanProcessing.Web/packages.config`), and FsCheck 2.16.6. A reference implementation is available in `solutions/LoanProcessing.Tests/`.
 
 ### Checkpoints
 
@@ -220,6 +233,8 @@ After Task 5: PBT tests run in CI. The validation page shows boundary test resul
 ### 7.1 — Run the Validation Dashboard
 
 Navigate to `/validation` and click "Run All Tests."
+
+> **Tip:** After CodeDeploy completes, wait a few seconds and refresh the page before running tests. The ALB may briefly serve the previous version during the deployment transition.
 
 All tests should pass with green status. The key tests to verify:
 

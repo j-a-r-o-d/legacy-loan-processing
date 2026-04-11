@@ -16,7 +16,7 @@ namespace LoanProcessing.Tests
                 Arb.From(Gen.Choose(1, 500000).Select(x => (decimal)x)),
                 (existingDebt, requestedAmount, annualIncome) =>
                 {
-                    decimal expected = ((existingDebt + requestedAmount) / annualIncome) * 100;
+                    decimal expected = Math.Round(((existingDebt + requestedAmount) / annualIncome) * 100, 4);
                     decimal actual = CreditEvaluationCalculator.CalculateDtiRatio(existingDebt, requestedAmount, annualIncome);
                     return actual == expected;
                 });
