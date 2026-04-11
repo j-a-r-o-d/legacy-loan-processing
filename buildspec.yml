@@ -17,16 +17,7 @@ phases:
       - echo "Building solution in Release configuration..."
       - msbuild LoanProcessing.Web\LoanProcessing.Web.csproj /p:Configuration=Release /p:Platform="AnyCPU" /p:DeployOnBuild=false /v:minimal
       - echo "Checking for test project..."
-      - |
-        if (Test-Path "LoanProcessing.Tests\LoanProcessing.Tests.csproj") {
-          echo "Building test project..."
-          nuget restore LoanProcessing.Tests\LoanProcessing.Tests.csproj -PackagesDirectory packages
-          msbuild LoanProcessing.Tests\LoanProcessing.Tests.csproj /p:Configuration=Release /p:Platform="AnyCPU" /v:minimal
-          $env:RUN_PBT = "true"
-        } else {
-          echo "Test project not found — PBT tests will be skipped (pre-extraction state)"
-          $env:RUN_PBT = "false"
-        }
+      - if (Test-Path "LoanProcessing.Tests\LoanProcessing.Tests.csproj") { echo "Building test project..."; nuget restore LoanProcessing.Tests\LoanProcessing.Tests.csproj -PackagesDirectory packages; msbuild LoanProcessing.Tests\LoanProcessing.Tests.csproj /p:Configuration=Release /p:Platform="AnyCPU" /v:minimal; $env:RUN_PBT = "true" } else { echo "Test project not found - PBT tests will be skipped"; $env:RUN_PBT = "false" }
       
   post_build:
     commands:
@@ -38,22 +29,21 @@ phases:
             $output = & packages\xunit.runner.console.2.4.2\tools\net472\xunit.console.exe LoanProcessing.Tests\bin\Release\LoanProcessing.Tests.dll -xml test-results.xml 2>&1
             $testResult = $LASTEXITCODE
             echo $output
-            # Count total and passed from xunit XML output
             [xml]$xml = Get-Content test-results.xml
             $total = [int]$xml.assemblies.assembly.total
             $failed = [int]$xml.assemblies.assembly.failed
             $passed = $total - $failed
-            $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-            $buildId = if ($env:CODEBUILD_BUILD_ID) { $env:CODEBUILD_BUILD_ID } else { "local" }
+            $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+            $buildId = if ($env:CODEBUILD_BUILD_ID) { $env:CODEBUILD_BUILD_ID } else { 'local' }
             $json = @{ TotalProperties = $total; PassedProperties = $passed; RunTimestamp = $timestamp; BuildId = $buildId } | ConvertTo-Json
             Set-Content -Path pbt-results.json -Value $json
           } catch {
             echo "PBT test execution failed: $_"
-            $json = @{ TotalProperties = 5; PassedProperties = 0; RunTimestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"); BuildId = if ($env:CODEBUILD_BUILD_ID) { $env:CODEBUILD_BUILD_ID } else { "local" } } | ConvertTo-Json
+            $json = @{ TotalProperties = 5; PassedProperties = 0; RunTimestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'); BuildId = if ($env:CODEBUILD_BUILD_ID) { $env:CODEBUILD_BUILD_ID } else { 'local' } } | ConvertTo-Json
             Set-Content -Path pbt-results.json -Value $json
           }
         } else {
-          echo "PBT tests skipped — CreditEvaluationCalculator not yet extracted"
+          echo "PBT tests skipped - CreditEvaluationCalculator not yet extracted"
         }
       - echo "Packaging application for deployment..."
       - mkdir deployment-package
