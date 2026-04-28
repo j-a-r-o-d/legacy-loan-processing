@@ -190,6 +190,13 @@ resource "aws_iam_role_policy" "instance" {
           "arn:aws:s3:::${var.project_name}-${var.environment}-*",
           "arn:aws:s3:::${var.project_name}-${var.environment}-*/*"
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "codepipeline:StartPipelineExecution"
+        ]
+        Resource = "arn:aws:codepipeline:*:*:loan-processing-pipeline-${var.environment}"
       }
     ]
   })

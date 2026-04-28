@@ -87,8 +87,10 @@ ${cloudwatch_config}
     "---`nregion: $region" | Out-File -FilePath $codeDeployConfigPath -Encoding UTF8 -Force
     Write-Host "CodeDeploy Agent configured for region: $region, environment: ${environment}"
 
-    # Trigger CodePipeline (CodeDeploy agent registers automatically via ASG integration)
+    # Trigger CodePipeline (wait for CodeDeploy agent to register with ASG deployment group)
     if ($agentRunning) {
+        Write-Host "Waiting 60s for CodeDeploy agent to register with deployment group..."
+        Start-Sleep -Seconds 60
         Write-Host "Triggering CodePipeline..."
         try {
             Import-Module AWS.Tools.CodePipeline
